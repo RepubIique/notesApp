@@ -40,3 +40,6 @@ coverage/
 # Deployment info (contains sensitive data)
 DEPLOYMENT_INFO.md
 FIXES_APPLIED.md
+
+# Kiro specs and configuration
+.kiro/
