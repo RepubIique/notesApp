@@ -36,7 +36,7 @@ export const authAPI = {
    * @returns {Promise<{role: 'A' | 'B'}>} The current user's role
    */
   me: async () => {
-    const response = await apiClient.get('/api/me');
+    const response = await apiClient.get('/api/auth/me');
     return response.data;
   }
 };
