@@ -51,7 +51,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     // Generate JWT token
     const token = generateToken(role, JWT_SECRET);
     
-    // Set HttpOnly cookie
+    // Set HttpOnly cookie (for same-origin)
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -59,8 +59,8 @@ router.post('/login', loginLimiter, async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
     
-    // Return role in response
-    return res.status(200).json({ role });
+    // Also return token in response (for cross-origin)
+    return res.status(200).json({ role, token });
   } catch (error) {
     console.error('Login error:', error);
     return res.status(500).json({ error: 'Internal server error' });

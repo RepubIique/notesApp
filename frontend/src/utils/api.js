@@ -10,15 +10,28 @@ const apiClient = axios.create({
   }
 });
 
+// Add token to all requests
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 // Auth API functions
 export const authAPI = {
   /**
    * Login with password
    * @param {string} password - The password to authenticate with
-   * @returns {Promise<{role: 'A' | 'B'}>} The authenticated user's role
+   * @returns {Promise<{role: 'A' | 'B', token: string}>} The authenticated user's role and token
    */
   login: async (password) => {
     const response = await apiClient.post('/api/auth/login', { password });
+    // Store token in localStorage for cross-origin compatibility
+    if (response.data.token) {
+      localStorage.setItem('auth_token', response.data.token);
+    }
     return response.data;
   },
 
@@ -28,6 +41,7 @@ export const authAPI = {
    */
   logout: async () => {
     const response = await apiClient.post('/api/auth/logout');
+    localStorage.removeItem('auth_token');
     return response.data;
   },
 

@@ -1,8 +1,16 @@
 import { verifyToken } from '../services/auth.js';
 
 export const authMiddleware = (req, res, next) => {
-  // Extract JWT from HttpOnly cookie
-  const token = req.cookies?.token;
+  // Extract JWT from HttpOnly cookie or Authorization header
+  let token = req.cookies?.token;
+  
+  // If no cookie, check Authorization header
+  if (!token) {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+  }
   
   if (!token) {
     return res.status(401).json({ error: 'Authentication required' });
