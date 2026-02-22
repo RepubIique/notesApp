@@ -36,3 +36,7 @@ coverage/
 # Temporary files
 *.tmp
 .cache/
+
+# Deployment info (contains sensitive data)
+DEPLOYMENT_INFO.md
+FIXES_APPLIED.md
