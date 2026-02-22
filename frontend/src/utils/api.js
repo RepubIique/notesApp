@@ -103,6 +103,35 @@ export const messageAPI = {
   addReaction: async (messageId, emoji) => {
     const response = await apiClient.post(`/api/messages/${messageId}/reactions`, { emoji });
     return response.data;
+  },
+
+  /**
+   * Mark messages as read
+   * @param {string[]} messageIds - Array of message IDs to mark as read
+   * @returns {Promise<{success: boolean}>} Success status
+   */
+  markAsRead: async (messageIds) => {
+    const response = await apiClient.post('/api/messages/read', { messageIds });
+    return response.data;
+  },
+
+  /**
+   * Update typing status
+   * @param {boolean} isTyping - Whether the user is currently typing
+   * @returns {Promise<{success: boolean}>} Success status
+   */
+  updateTyping: async (isTyping) => {
+    const response = await apiClient.post('/api/messages/typing', { isTyping });
+    return response.data;
+  },
+
+  /**
+   * Get other user's activity status
+   * @returns {Promise<{activity: Object}>} Activity status including last_seen and is_typing
+   */
+  getActivity: async () => {
+    const response = await apiClient.get('/api/messages/activity');
+    return response.data;
   }
 };
 

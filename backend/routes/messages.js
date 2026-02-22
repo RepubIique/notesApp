@@ -1,6 +1,6 @@
 import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
-import { getMessages, createTextMessage, unsendMessage } from '../services/messages.js';
+import { getMessages, createTextMessage, unsendMessage, markMessagesAsDelivered, markMessagesAsRead, updateUserActivity, getOtherUserActivity } from '../services/messages.js';
 import { addReaction } from '../services/reactions.js';
 
 const router = express.Router();
@@ -19,6 +19,12 @@ router.get('/', authMiddleware, async (req, res) => {
 
     // Call getMessages function
     const messages = await getMessages(limit, before);
+
+    // Mark messages as delivered for the requesting user
+    await markMessagesAsDelivered(req.user.role);
+
+    // Update user's last seen
+    await updateUserActivity(req.user.role, false);
 
     // Return messages array
     res.json({ messages });
@@ -110,6 +116,54 @@ router.post('/:messageId/reactions', authMiddleware, async (req, res) => {
     }
 
     res.status(500).json({ error: 'Failed to add reaction' });
+  }
+});
+
+// POST /api/messages/read - Mark messages as read
+router.post('/read', authMiddleware, async (req, res) => {
+  try {
+    const { messageIds } = req.body;
+
+    if (!Array.isArray(messageIds)) {
+      return res.status(400).json({ error: 'messageIds must be an array' });
+    }
+
+    await markMessagesAsRead(req.user.role, messageIds);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error marking messages as read:', error);
+    res.status(500).json({ error: 'Failed to mark messages as read' });
+  }
+});
+
+// POST /api/messages/typing - Update typing status
+router.post('/typing', authMiddleware, async (req, res) => {
+  try {
+    const { isTyping } = req.body;
+
+    if (typeof isTyping !== 'boolean') {
+      return res.status(400).json({ error: 'isTyping must be a boolean' });
+    }
+
+    await updateUserActivity(req.user.role, isTyping);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating typing status:', error);
+    res.status(500).json({ error: 'Failed to update typing status' });
+  }
+});
+
+// GET /api/messages/activity - Get other user's activity status
+router.get('/activity', authMiddleware, async (req, res) => {
+  try {
+    const activity = await getOtherUserActivity(req.user.role);
+
+    res.json({ activity });
+  } catch (error) {
+    console.error('Error fetching user activity:', error);
+    res.status(500).json({ error: 'Failed to fetch user activity' });
   }
 });
 

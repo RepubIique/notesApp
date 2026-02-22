@@ -53,12 +53,21 @@ function MessageItem({ message, isOwn, onUnsend, onReact }) {
         setShowEmojiPicker(false);
       }}
     >
-      <div style={styles.messageContent}>
+      <div style={{
+        ...styles.messageContent,
+        backgroundColor: isOwn ? '#007bff' : '#fff'
+      }}>
         {/* Message content */}
         {message.deleted ? (
-          <div style={styles.deletedText}>[Message deleted]</div>
+          <div style={{
+            ...styles.deletedText,
+            color: isOwn ? 'rgba(255,255,255,0.7)' : '#999'
+          }}>[Message deleted]</div>
         ) : message.type === 'text' ? (
-          <div style={styles.textContent}>{message.text}</div>
+          <div style={{
+            ...styles.textContent,
+            color: isOwn ? '#fff' : '#333'
+          }}>{message.text}</div>
         ) : message.type === 'image' ? (
           <div style={styles.imageContainer}>
             {imageError ? (
@@ -128,9 +137,17 @@ function MessageItem({ message, isOwn, onUnsend, onReact }) {
         )}
       </div>
 
-      {/* Timestamp */}
+      {/* Timestamp and status */}
       <div style={styles.timestamp}>
         {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        {isOwn && !message.deleted && (
+          <span style={{
+            ...styles.statusIndicator,
+            color: message.read_at ? '#4CAF50' : '#999'
+          }}>
+            {message.read_at ? ' ✓✓' : message.delivered_at ? ' ✓' : ' ⏱'}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -140,8 +157,8 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'column',
-    marginBottom: '0.5rem',
-    maxWidth: '70%',
+    marginBottom: '0.75rem',
+    maxWidth: '100%',
     position: 'relative'
   },
   ownMessage: {
@@ -153,22 +170,20 @@ const styles = {
     alignItems: 'flex-start'
   },
   messageContent: {
-    backgroundColor: '#fff',
-    padding: '0.75rem',
-    borderRadius: '8px',
-    boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+    padding: '0.5rem 0.75rem',
+    borderRadius: '12px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
     position: 'relative',
-    wordBreak: 'break-word'
+    wordBreak: 'break-word',
+    minWidth: '60px'
   },
   textContent: {
     fontSize: '0.9375rem',
-    lineHeight: '1.4',
-    color: '#333'
+    lineHeight: '1.4'
   },
   deletedText: {
     fontSize: '0.9375rem',
-    fontStyle: 'italic',
-    color: '#999'
+    fontStyle: 'italic'
   },
   imageContainer: {
     maxWidth: '100%'
@@ -202,10 +217,9 @@ const styles = {
     alignItems: 'center',
     gap: '0.25rem',
     padding: '0.125rem 0.5rem',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'rgba(0,0,0,0.1)',
     borderRadius: '12px',
-    fontSize: '0.75rem',
-    color: '#333'
+    fontSize: '0.75rem'
   },
   actionsContainer: {
     position: 'absolute',
@@ -264,7 +278,13 @@ const styles = {
   timestamp: {
     fontSize: '0.6875rem',
     color: '#999',
-    marginTop: '0.25rem'
+    marginTop: '0.25rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.25rem'
+  },
+  statusIndicator: {
+    fontSize: '0.75rem'
   }
 };
 

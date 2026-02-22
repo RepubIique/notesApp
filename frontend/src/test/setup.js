@@ -6,3 +6,14 @@ import '@testing-library/jest-dom';
 afterEach(() => {
   cleanup();
 });
+
+// Mock IntersectionObserver for tests
+global.IntersectionObserver = class IntersectionObserver {
+  constructor() {}
+  disconnect() {}
+  observe() {}
+  unobserve() {}
+  takeRecords() {
+    return [];
+  }
+};

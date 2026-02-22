@@ -1,10 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
 import MessageItem from './MessageItem';
 
-function MessageList({ messages, currentUser, onUnsend, onReact, onLoadMore }) {
+function MessageList({ messages, currentUser, onUnsend, onReact, onLoadMore, onMessageVisible }) {
   const listRef = useRef(null);
   const [prevMessageCount, setPrevMessageCount] = useState(0);
   const [isAtBottom, setIsAtBottom] = useState(true);
+  const observerRef = useRef(null);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -13,6 +14,38 @@ function MessageList({ messages, currentUser, onUnsend, onReact, onLoadMore }) {
     }
     setPrevMessageCount(messages.length);
   }, [messages.length, prevMessageCount, isAtBottom]);
+
+  // Set up Intersection Observer for marking messages as read
+  useEffect(() => {
+    if (!onMessageVisible) return;
+
+    // Create observer
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const messageId = entry.target.getAttribute('data-message-id');
+            if (messageId) {
+              onMessageVisible(messageId);
+            }
+          }
+        });
+      },
+      {
+        root: listRef.current,
+        threshold: 0.5 // Message is considered visible when 50% is in view
+      }
+    );
+
+    // Observe all message elements
+    const messageElements = listRef.current?.querySelectorAll('[data-message-id]');
+    messageElements?.forEach((el) => observerRef.current.observe(el));
+
+    // Cleanup
+    return () => {
+      observerRef.current?.disconnect();
+    };
+  }, [messages, onMessageVisible]);
 
   const scrollToBottom = () => {
     if (listRef.current) {
@@ -49,13 +82,14 @@ function MessageList({ messages, currentUser, onUnsend, onReact, onLoadMore }) {
       ) : (
         // Display messages in newest-first order (reverse chronological)
         messages.map((message) => (
-          <MessageItem
-            key={message.id}
-            message={message}
-            isOwn={message.sender === currentUser}
-            onUnsend={onUnsend}
-            onReact={onReact}
-          />
+          <div key={message.id} data-message-id={message.id}>
+            <MessageItem
+              message={message}
+              isOwn={message.sender === currentUser}
+              onUnsend={onUnsend}
+              onReact={onReact}
+            />
+          </div>
         ))
       )}
     </div>

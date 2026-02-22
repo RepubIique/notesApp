@@ -1,9 +1,12 @@
 import React, { useState, useRef } from 'react';
+import { messageAPI } from '../utils/api';
 
 function MessageComposer({ onSendText, onSendImage }) {
   const [text, setText] = useState('');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+  const isTypingRef = useRef(false);
 
   const handleTextSubmit = async (e) => {
     e.preventDefault();
@@ -13,6 +16,9 @@ function MessageComposer({ onSendText, onSendImage }) {
       return;
     }
 
+    // Clear typing status immediately
+    clearTypingStatus();
+
     try {
       await onSendText(text);
       // Clear input after successful send
@@ -20,6 +26,48 @@ function MessageComposer({ onSendText, onSendImage }) {
     } catch (error) {
       console.error('Failed to send message:', error);
       // Could add error UI here
+    }
+  };
+
+  const handleTextChange = (e) => {
+    const newText = e.target.value;
+    setText(newText);
+
+    // Handle typing indicator
+    if (newText.trim()) {
+      // User is typing
+      if (!isTypingRef.current) {
+        isTypingRef.current = true;
+        messageAPI.updateTyping(true).catch(err => 
+          console.error('Failed to update typing status:', err)
+        );
+      }
+
+      // Clear existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Set timeout to clear typing status after 3 seconds of no typing
+      typingTimeoutRef.current = setTimeout(() => {
+        clearTypingStatus();
+      }, 3000);
+    } else {
+      // Input is empty, clear typing status
+      clearTypingStatus();
+    }
+  };
+
+  const clearTypingStatus = () => {
+    if (isTypingRef.current) {
+      isTypingRef.current = false;
+      messageAPI.updateTyping(false).catch(err => 
+        console.error('Failed to clear typing status:', err)
+      );
+    }
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
     }
   };
 
@@ -91,7 +139,7 @@ function MessageComposer({ onSendText, onSendImage }) {
         <input
           type="text"
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={handleTextChange}
           placeholder="Type a message..."
           style={styles.textInput}
           disabled={uploading}

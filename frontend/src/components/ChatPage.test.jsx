@@ -15,7 +15,10 @@ vi.mock('../utils/api', () => ({
     getMessages: vi.fn(),
     sendText: vi.fn(),
     unsend: vi.fn(),
-    addReaction: vi.fn()
+    addReaction: vi.fn(),
+    getActivity: vi.fn(),
+    markAsRead: vi.fn(),
+    updateTyping: vi.fn()
   },
   imageAPI: {
     upload: vi.fn(),
@@ -35,6 +38,8 @@ describe('ChatPage', () => {
     api.authAPI.me.mockResolvedValue({ role: 'A' });
     // Mock successful message fetch
     api.messageAPI.getMessages.mockResolvedValue({ messages: [] });
+    // Mock successful activity fetch
+    api.messageAPI.getActivity.mockResolvedValue({ activity: null });
   });
 
   afterEach(() => {
@@ -103,7 +108,7 @@ describe('ChatPage', () => {
   it('should display current user role', async () => {
     renderChatPage();
     
-    const roleText = await screen.findByText(/Identity A/i, {}, { timeout: 1000 });
+    const roleText = await screen.findByText(/黄/i, {}, { timeout: 1000 });
     expect(roleText).toBeInTheDocument();
   });
 
