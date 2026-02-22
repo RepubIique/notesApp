@@ -68,12 +68,12 @@ In the "Environment" section, add these variables:
 ```
 PORT=3000
 FRONTEND_URL=https://your-app.vercel.app
-PASSWORD_A_HASH=$2b$10$LEkKXxamC.KDis6ApXqgEeFqCRebEBbjJfVJkUhgkF6DX2EqEKYrm
-PASSWORD_B_HASH=$2b$10$kBEm3rGeGSrcaQ2bNHm50Oos/gYc/.7y4fW8AA9GWmrDzPasbLh9K
-JWT_SECRET=your-production-jwt-secret-here
-HASH_SALT=$2b$10$2yYPw234YEZDRD0xLx62Be
-SUPABASE_URL=https://gztlgzjoqhkfuhdlhobg.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+PASSWORD_A_HASH=<your-generated-password-a-hash>
+PASSWORD_B_HASH=<your-generated-password-b-hash>
+JWT_SECRET=<your-generated-jwt-secret>
+HASH_SALT=<your-generated-hash-salt>
+SUPABASE_URL=<your-supabase-project-url>
+SUPABASE_SERVICE_ROLE_KEY=<your-supabase-service-role-key>
 ```
 
 **Important:** 
