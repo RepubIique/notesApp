@@ -28,9 +28,11 @@ app.get('/health', (req, res) => {
 import authRoutes from './routes/auth.js';
 import messagesRoutes from './routes/messages.js';
 import imagesRoutes from './routes/images.js';
+import workoutRoutes from './routes/workouts.js';
 app.use('/api/auth', authRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/images', imagesRoutes);
+app.use('/api/workouts', workoutRoutes);
 
 let server;
 

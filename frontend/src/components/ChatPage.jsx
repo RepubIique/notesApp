@@ -1,6 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
+import {
+  Box,
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  Tabs,
+  Tab,
+  Fab,
+  Chip
+} from '@mui/material';
+import {
+  FitnessCenter as FitnessCenterIcon,
+  Logout as LogoutIcon,
+  Facebook as FacebookIcon
+} from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import useIdleTimer from '../hooks/useIdleTimer';
 import MessageList from './MessageList';
 import MessageComposer from './MessageComposer';
@@ -14,6 +30,7 @@ const getRoleName = (role) => {
 function ChatPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [messages, setMessages] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [otherUserActivity, setOtherUserActivity] = useState(null);
@@ -79,6 +96,10 @@ function ChatPage() {
   const handleLogout = async () => {
     await logout();
     navigate('/login');
+  };
+
+  const handleTabChange = (event, newValue) => {
+    navigate(newValue);
   };
 
   // Handle message send
@@ -174,7 +195,7 @@ function ChatPage() {
     if (!isDragging) return;
 
     const deltaX = dragStartRef.current.x - clientX;
-    const deltaY = clientY - dragStartRef.current.y;
+    const deltaY = dragStartRef.current.y - clientY; // Fixed: inverted the calculation
 
     setFabPosition({
       bottom: dragStartRef.current.bottom + deltaY,
@@ -216,27 +237,45 @@ function ChatPage() {
   }, [isDragging, fabPosition]);
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <div>
-          <h1 style={styles.title}>Chat</h1>
-          {otherUserActivity?.is_typing && (
-            <div style={styles.typingIndicator}>
-              {getRoleName(currentUser === 'A' ? 'B' : 'A')} is typing
-              <span className="typing-dots">
-                <span>.</span><span>.</span><span>.</span>
-              </span>
-            </div>
-          )}
-        </div>
-        <div style={styles.userInfo}>
-          <span>Logged in as: {getRoleName(user?.role)}</span>
-          <button onClick={handleLogout} style={styles.logoutButton}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', bgcolor: 'grey.50' }}>
+      {/* App Bar with Navigation */}
+      <AppBar position="sticky" elevation={1} sx={{ bgcolor: 'white', color: 'text.primary' }}>
+        <Toolbar>
+          <FitnessCenterIcon sx={{ mr: 2, color: 'primary.main' }} />
+          <Typography variant="h6" component="h1" sx={{ flexGrow: 1, fontWeight: 700 }}>
+            FitTrack
+          </Typography>
+          <Tabs value={location.pathname} onChange={handleTabChange} sx={{ mr: 2 }}>
+            <Tab label="Fitness" value="/" />
+            <Tab label="Profile" value="/chat" />
+          </Tabs>
+          <Chip label={`Logged in as: ${getRoleName(user?.role)}`} sx={{ mr: 2 }} />
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<LogoutIcon />}
+            onClick={handleLogout}
+            size="small"
+          >
             Logout
-          </button>
-        </div>
-      </div>
-      <div style={styles.content}>
+          </Button>
+        </Toolbar>
+      </AppBar>
+
+      {/* Typing Indicator */}
+      {otherUserActivity?.is_typing && (
+        <Box sx={{ bgcolor: 'info.light', px: 2, py: 1 }}>
+          <Typography variant="body2" color="info.dark">
+            {getRoleName(currentUser === 'A' ? 'B' : 'A')} is typing
+            <span className="typing-dots">
+              <span>.</span><span>.</span><span>.</span>
+            </span>
+          </Typography>
+        </Box>
+      )}
+
+      {/* Chat Content */}
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <MessageList
           messages={messages}
           currentUser={currentUser}
@@ -248,20 +287,21 @@ function ChatPage() {
           onSendText={handleSendText}
           onSendImage={handleSendImage}
         />
-      </div>
+      </Box>
       
       {/* Floating Action Button */}
-      <a
+      <Fab
+        color="primary"
+        component="a"
         href={isDragging ? undefined : "https://facebook.com"}
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{
-          ...styles.fab,
+        sx={{
+          position: 'fixed',
           bottom: `${fabPosition.bottom}px`,
           right: `${fabPosition.right}px`,
-          cursor: isDragging ? 'grabbing' : 'grab'
+          cursor: isDragging ? 'grabbing' : 'grab',
+          bgcolor: '#1877f2',
+          '&:hover': { bgcolor: '#166fe5' }
         }}
-        title="Open Facebook"
         onMouseDown={handleFabMouseDown}
         onTouchStart={handleFabTouchStart}
         onClick={(e) => {
@@ -270,86 +310,10 @@ function ChatPage() {
           }
         }}
       >
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-        </svg>
-      </a>
-    </div>
+        <FacebookIcon />
+      </Fab>
+    </Box>
   );
 }
-
-const styles = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100vh',
-    backgroundColor: '#f5f5f5',
-    position: 'relative'
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '1rem 2rem',
-    backgroundColor: 'white',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-  },
-  title: {
-    margin: 0,
-    fontSize: '1.5rem'
-  },
-  typingIndicator: {
-    fontSize: '0.875rem',
-    color: '#666',
-    marginTop: '0.25rem',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.25rem'
-  },
-  userInfo: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1rem'
-  },
-  logoutButton: {
-    padding: '0.5rem 1rem',
-    fontSize: '0.875rem',
-    backgroundColor: '#dc3545',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer'
-  },
-  content: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden'
-  },
-  fab: {
-    position: 'fixed',
-    width: '56px',
-    height: '56px',
-    borderRadius: '50%',
-    backgroundColor: '#1877f2',
-    color: 'white',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    textDecoration: 'none',
-    transition: 'box-shadow 0.3s ease',
-    zIndex: 1000,
-    userSelect: 'none',
-    WebkitUserSelect: 'none',
-    touchAction: 'none'
-  }
-};
 
 export default ChatPage;

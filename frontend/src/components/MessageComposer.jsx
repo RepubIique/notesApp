@@ -1,4 +1,15 @@
 import React, { useState, useRef } from 'react';
+import {
+  Box,
+  TextField,
+  IconButton,
+  Button,
+  CircularProgress
+} from '@mui/material';
+import {
+  Send as SendIcon,
+  Image as ImageIcon
+} from '@mui/icons-material';
 import { messageAPI } from '../utils/api';
 
 function MessageComposer({ onSendText, onSendImage }) {
@@ -109,111 +120,61 @@ function MessageComposer({ onSendText, onSendImage }) {
   };
 
   return (
-    <div style={styles.container}>
-      <form onSubmit={handleTextSubmit} style={styles.form}>
-        {/* Hidden image input triggered by icon */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/gif,image/webp"
-          onChange={handleImageSelect}
-          style={styles.hiddenInput}
-          disabled={uploading}
-        />
-        
-        {/* Image upload icon button */}
-        <button
-          type="button"
-          onClick={handleImageIconClick}
-          disabled={uploading}
-          style={{
-            ...styles.imageButton,
-            ...(uploading ? styles.imageButtonDisabled : {})
-          }}
-          title="Upload image"
-        >
-          {uploading ? '⏳' : '📷'}
-        </button>
+    <Box
+      component="form"
+      onSubmit={handleTextSubmit}
+      sx={{
+        p: 2,
+        bgcolor: 'white',
+        borderTop: 1,
+        borderColor: 'divider',
+        display: 'flex',
+        gap: 1,
+        alignItems: 'center'
+      }}
+    >
+      {/* Hidden image input triggered by icon */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/gif,image/webp"
+        onChange={handleImageSelect}
+        style={{ display: 'none' }}
+        disabled={uploading}
+      />
+      
+      {/* Image upload icon button */}
+      <IconButton
+        onClick={handleImageIconClick}
+        disabled={uploading}
+        color="primary"
+        title="Upload image"
+      >
+        {uploading ? <CircularProgress size={24} /> : <ImageIcon />}
+      </IconButton>
 
-        {/* Text input */}
-        <input
-          type="text"
-          value={text}
-          onChange={handleTextChange}
-          placeholder="Type a message..."
-          style={styles.textInput}
-          disabled={uploading}
-        />
+      {/* Text input */}
+      <TextField
+        fullWidth
+        value={text}
+        onChange={handleTextChange}
+        placeholder="Type a message..."
+        disabled={uploading}
+        variant="outlined"
+        size="small"
+      />
 
-        {/* Send button */}
-        <button
-          type="submit"
-          disabled={!text.trim() || uploading}
-          style={{
-            ...styles.sendButton,
-            ...(!text.trim() || uploading ? styles.sendButtonDisabled : {})
-          }}
-        >
-          Send
-        </button>
-      </form>
-    </div>
+      {/* Send button */}
+      <Button
+        type="submit"
+        variant="contained"
+        disabled={!text.trim() || uploading}
+        endIcon={<SendIcon />}
+      >
+        Send
+      </Button>
+    </Box>
   );
 }
-
-const styles = {
-  container: {
-    padding: '1rem',
-    backgroundColor: 'white',
-    borderTop: '1px solid #e0e0e0'
-  },
-  form: {
-    display: 'flex',
-    gap: '0.5rem',
-    alignItems: 'center'
-  },
-  hiddenInput: {
-    display: 'none'
-  },
-  imageButton: {
-    padding: '0.5rem',
-    fontSize: '1.5rem',
-    backgroundColor: 'transparent',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: '40px',
-    minHeight: '40px'
-  },
-  imageButtonDisabled: {
-    opacity: 0.5,
-    cursor: 'not-allowed'
-  },
-  textInput: {
-    flex: 1,
-    padding: '0.75rem',
-    fontSize: '1rem',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-    outline: 'none'
-  },
-  sendButton: {
-    padding: '0.75rem 1.5rem',
-    fontSize: '1rem',
-    backgroundColor: '#007bff',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontWeight: '500'
-  },
-  sendButtonDisabled: {
-    backgroundColor: '#ccc',
-    cursor: 'not-allowed'
-  }
-};
 
 export default MessageComposer;

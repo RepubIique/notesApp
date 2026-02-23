@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './components/LoginPage';
 import ChatPage from './components/ChatPage';
+import FitnessPage from './components/FitnessPage';
 import { useAuth } from './context/AuthContext';
 
 function ProtectedRoute({ children }) {
@@ -31,7 +32,8 @@ function App() {
             </ProtectedRoute>
           } 
         />
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        {/* Fitness page is public - no authentication required */}
+        <Route path="/" element={<FitnessPage />} />
       </Routes>
     </Router>
   );

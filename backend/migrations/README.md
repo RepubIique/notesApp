@@ -8,6 +8,8 @@ This directory contains SQL migration files for setting up the Supabase database
 2. **002_create_reactions_table.sql** - Creates the reactions table with foreign keys
 3. **003_create_push_subscriptions_table.sql** - Creates the push_subscriptions table (optional feature)
 4. **004_create_storage_bucket.md** - Instructions for creating the images storage bucket
+5. **005_add_message_status.sql** - Adds message status tracking
+6. **006_create_workouts_table.sql** - Creates the workouts table for fitness tracker (public access)
 
 ## Running Migrations
 
@@ -16,7 +18,7 @@ This directory contains SQL migration files for setting up the Supabase database
 1. Log in to your Supabase project dashboard
 2. Navigate to **SQL Editor** in the left sidebar
 3. Click **New query**
-4. Copy and paste the contents of each migration file in order (001, 002, 003)
+4. Copy and paste the contents of each migration file in order (001, 002, 003, 005, 006)
 5. Click **Run** for each migration
 6. Follow the instructions in `004_create_storage_bucket.md` to set up the storage bucket
 
@@ -58,7 +60,7 @@ After running all migrations, verify the schema:
 SELECT table_name 
 FROM information_schema.tables 
 WHERE table_schema = 'public' 
-AND table_name IN ('messages', 'reactions', 'push_subscriptions');
+AND table_name IN ('messages', 'reactions', 'push_subscriptions', 'workouts');
 
 -- Check messages table structure
 \d messages
@@ -69,11 +71,19 @@ AND table_name IN ('messages', 'reactions', 'push_subscriptions');
 -- Check push_subscriptions table structure
 \d push_subscriptions
 
+-- Check workouts table structure
+\d workouts
+
 -- Verify indexes
 SELECT indexname, tablename 
 FROM pg_indexes 
 WHERE schemaname = 'public' 
-AND tablename IN ('messages', 'reactions', 'push_subscriptions');
+AND tablename IN ('messages', 'reactions', 'push_subscriptions', 'workouts');
+
+-- Verify RLS policies on workouts table
+SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual, with_check
+FROM pg_policies
+WHERE tablename = 'workouts';
 
 -- Verify storage bucket
 SELECT * FROM storage.buckets WHERE id = 'images';
@@ -100,6 +110,14 @@ SELECT * FROM storage.buckets WHERE id = 'images';
 - Unique constraint on endpoint prevents duplicates
 - Indexed on `owner` for efficient retrieval
 
+### workouts Table
+- Stores workout entries for public fitness tracker
+- No authentication required (public access via RLS policies)
+- Enforces positive values for sets and reps
+- Enforces non-negative values for weight
+- Indexed on `created_at` for chronological queries
+- Completely separate from chat-related tables
+
 ### images Storage Bucket
 - Private bucket for image uploads
 - 25MB file size limit
@@ -112,6 +130,7 @@ If you need to rollback the migrations:
 
 ```sql
 -- Drop tables in reverse order (respects foreign keys)
+DROP TABLE IF EXISTS workouts CASCADE;
 DROP TABLE IF EXISTS reactions CASCADE;
 DROP TABLE IF EXISTS push_subscriptions CASCADE;
 DROP TABLE IF EXISTS messages CASCADE;
