@@ -32,10 +32,53 @@ function LoginPage() {
     }
   };
 
+  const handleSSOClick = () => {
+    window.location.href = 'https://www.weather.com';
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.card}>
         <h1 style={styles.title}>Login</h1>
+        
+        {/* Fake SSO Buttons */}
+        <div style={styles.ssoContainer}>
+          <button 
+            type="button"
+            onClick={handleSSOClick}
+            style={{...styles.ssoButton, ...styles.facebookButton}}
+          >
+            <span style={styles.ssoIcon}>f</span>
+            Continue with Facebook
+          </button>
+          
+          <button 
+            type="button"
+            onClick={handleSSOClick}
+            style={{...styles.ssoButton, ...styles.googleButton}}
+          >
+            <span style={styles.ssoIcon}>G</span>
+            Continue with Google
+          </button>
+          
+          <button 
+            type="button"
+            onClick={handleSSOClick}
+            style={{...styles.ssoButton, ...styles.tiktokButton}}
+          >
+            <span style={styles.ssoIcon}>♪</span>
+            Continue with TikTok
+          </button>
+        </div>
+
+        {/* Divider */}
+        <div style={styles.divider}>
+          <span style={styles.dividerLine}></span>
+          <span style={styles.dividerText}>OR</span>
+          <span style={styles.dividerLine}></span>
+        </div>
+
+        {/* Password Login */}
         <form onSubmit={handleSubmit} style={styles.form}>
           <input
             type="password"
@@ -81,6 +124,61 @@ const styles = {
     margin: '0 0 1.5rem 0',
     fontSize: '1.5rem',
     textAlign: 'center'
+  },
+  ssoContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.75rem',
+    marginBottom: '1.5rem'
+  },
+  ssoButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '0.75rem',
+    fontSize: '1rem',
+    fontWeight: '600',
+    border: '1px solid #ddd',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    transition: 'opacity 0.2s',
+    position: 'relative'
+  },
+  facebookButton: {
+    backgroundColor: '#1877f2',
+    color: 'white',
+    border: 'none'
+  },
+  googleButton: {
+    backgroundColor: 'white',
+    color: '#3c4043',
+    border: '1px solid #dadce0'
+  },
+  tiktokButton: {
+    backgroundColor: '#000000',
+    color: 'white',
+    border: 'none'
+  },
+  ssoIcon: {
+    marginRight: '0.5rem',
+    fontSize: '1.2rem',
+    fontWeight: 'bold'
+  },
+  divider: {
+    display: 'flex',
+    alignItems: 'center',
+    margin: '1.5rem 0',
+    gap: '0.75rem'
+  },
+  dividerLine: {
+    flex: 1,
+    height: '1px',
+    backgroundColor: '#ddd'
+  },
+  dividerText: {
+    color: '#666',
+    fontSize: '0.875rem',
+    fontWeight: '500'
   },
   form: {
     display: 'flex',
