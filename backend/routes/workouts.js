@@ -119,4 +119,41 @@ router.get('/', async (req, res) => {
   }
 });
 
+// DELETE /api/workouts/:id - Delete a workout entry
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate ID is provided
+    if (!id || id.trim().length === 0) {
+      return res.status(400).json({
+        error: 'Invalid workout ID'
+      });
+    }
+
+    // Delete workout from database
+    const { error } = await supabase
+      .from('workouts')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Database error deleting workout:', error);
+      return res.status(500).json({
+        error: 'Database operation failed',
+        message: 'Unable to delete workout. Please try again.'
+      });
+    }
+
+    // Return success response
+    res.json({ message: 'Workout deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting workout:', error);
+    res.status(500).json({
+      error: 'Database operation failed',
+      message: 'Unable to delete workout. Please try again.'
+    });
+  }
+});
+
 export default router;
