@@ -1,10 +1,31 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
 import FitnessPage from './FitnessPage';
+import { AuthProvider } from '../context/AuthContext';
 import * as workoutAPI from '../utils/workoutAPI';
 
 // Mock the workoutAPI module
 vi.mock('../utils/workoutAPI');
+
+// Mock the authAPI module
+vi.mock('../utils/api', () => ({
+  authAPI: {
+    me: vi.fn().mockResolvedValue({ role: null }),
+    logout: vi.fn().mockResolvedValue({})
+  }
+}));
+
+// Helper to render with Router and Auth context
+const renderWithProviders = (component) => {
+  return render(
+    <BrowserRouter>
+      <AuthProvider>
+        {component}
+      </AuthProvider>
+    </BrowserRouter>
+  );
+};
 
 describe('FitnessPage', () => {
   beforeEach(() => {
@@ -20,7 +41,7 @@ describe('FitnessPage', () => {
       // Mock empty workout list
       workoutAPI.getWorkouts.mockResolvedValue({ workouts: [] });
 
-      render(<FitnessPage />);
+      renderWithProviders(<FitnessPage />);
 
       // Wait for loading to complete
       await waitFor(() => {
@@ -37,7 +58,7 @@ describe('FitnessPage', () => {
       // Mock API to never resolve (to keep loading state)
       workoutAPI.getWorkouts.mockImplementation(() => new Promise(() => {}));
 
-      render(<FitnessPage />);
+      renderWithProviders(<FitnessPage />);
 
       // Verify loading indicator is shown
       expect(screen.getByText(/loading workouts/i)).toBeInTheDocument();
@@ -47,7 +68,7 @@ describe('FitnessPage', () => {
       // Mock API error
       workoutAPI.getWorkouts.mockRejectedValue(new Error('Network error'));
 
-      render(<FitnessPage />);
+      renderWithProviders(<FitnessPage />);
 
       // Wait for error to appear
       await waitFor(() => {
@@ -60,7 +81,7 @@ describe('FitnessPage', () => {
     it('should call getWorkouts on component mount', async () => {
       workoutAPI.getWorkouts.mockResolvedValue({ workouts: [] });
 
-      render(<FitnessPage />);
+      renderWithProviders(<FitnessPage />);
 
       // Verify API was called
       await waitFor(() => {
@@ -83,7 +104,7 @@ describe('FitnessPage', () => {
 
       workoutAPI.getWorkouts.mockResolvedValue({ workouts: mockWorkouts });
 
-      render(<FitnessPage />);
+      renderWithProviders(<FitnessPage />);
 
       // Wait for workout to appear
       await waitFor(() => {
@@ -94,7 +115,7 @@ describe('FitnessPage', () => {
     it('should set loading to false after fetch completes', async () => {
       workoutAPI.getWorkouts.mockResolvedValue({ workouts: [] });
 
-      render(<FitnessPage />);
+      renderWithProviders(<FitnessPage />);
 
       // Initially loading
       expect(screen.getByText(/loading workouts/i)).toBeInTheDocument();
@@ -131,7 +152,7 @@ describe('FitnessPage', () => {
 
       workoutAPI.getWorkouts.mockResolvedValue({ workouts: mockWorkouts });
 
-      render(<FitnessPage />);
+      renderWithProviders(<FitnessPage />);
 
       // Wait for stats to update
       await waitFor(() => {
@@ -170,7 +191,7 @@ describe('FitnessPage', () => {
 
       workoutAPI.getWorkouts.mockResolvedValue({ workouts: mockWorkouts });
 
-      render(<FitnessPage />);
+      renderWithProviders(<FitnessPage />);
 
       // Wait for component to render
       await waitFor(() => {
@@ -199,7 +220,7 @@ describe('FitnessPage', () => {
 
       workoutAPI.createWorkout.mockResolvedValue({ workout: newWorkout });
 
-      const { container } = render(<FitnessPage />);
+      const { container } = renderWithProviders(<FitnessPage />);
 
       // Wait for initial load
       await waitFor(() => {
@@ -252,7 +273,7 @@ describe('FitnessPage', () => {
 
       workoutAPI.createWorkout.mockResolvedValue({ workout: newWorkout });
 
-      render(<FitnessPage />);
+      renderWithProviders(<FitnessPage />);
 
       await waitFor(() => {
         expect(screen.queryByText(/loading workouts/i)).not.toBeInTheDocument();
@@ -300,7 +321,7 @@ describe('FitnessPage', () => {
 
       workoutAPI.createWorkout.mockResolvedValue({ workout: newWorkout });
 
-      render(<FitnessPage />);
+      renderWithProviders(<FitnessPage />);
 
       await waitFor(() => {
         expect(screen.queryByText(/loading workouts/i)).not.toBeInTheDocument();
@@ -340,7 +361,7 @@ describe('FitnessPage', () => {
 
       workoutAPI.createWorkout.mockResolvedValue({ workout: newWorkout });
 
-      render(<FitnessPage />);
+      renderWithProviders(<FitnessPage />);
 
       await waitFor(() => {
         expect(screen.queryByText(/loading workouts/i)).not.toBeInTheDocument();
@@ -387,7 +408,7 @@ describe('FitnessPage', () => {
 
       workoutAPI.createWorkout.mockResolvedValue({ workout: newWorkout });
 
-      render(<FitnessPage />);
+      renderWithProviders(<FitnessPage />);
 
       await waitFor(() => {
         expect(screen.queryByText(/loading workouts/i)).not.toBeInTheDocument();
@@ -416,7 +437,7 @@ describe('FitnessPage', () => {
       workoutAPI.getWorkouts.mockResolvedValue({ workouts: [] });
       workoutAPI.createWorkout.mockRejectedValue(new Error('Network connection failed'));
 
-      render(<FitnessPage />);
+      renderWithProviders(<FitnessPage />);
 
       await waitFor(() => {
         expect(screen.queryByText(/loading workouts/i)).not.toBeInTheDocument();
@@ -448,7 +469,7 @@ describe('FitnessPage', () => {
       workoutAPI.getWorkouts.mockResolvedValue({ workouts: [] });
       workoutAPI.createWorkout.mockRejectedValue(new Error('Database error'));
 
-      render(<FitnessPage />);
+      renderWithProviders(<FitnessPage />);
 
       await waitFor(() => {
         expect(screen.queryByText(/loading workouts/i)).not.toBeInTheDocument();
@@ -502,7 +523,7 @@ describe('FitnessPage', () => {
 
       workoutAPI.createWorkout.mockResolvedValue({ workout: newWorkout });
 
-      render(<FitnessPage />);
+      renderWithProviders(<FitnessPage />);
 
       await waitFor(() => {
         expect(screen.getByText('Old Workout')).toBeInTheDocument();
@@ -545,7 +566,7 @@ describe('FitnessPage', () => {
 
       workoutAPI.getWorkouts.mockResolvedValue({ workouts: mockWorkouts });
 
-      render(<FitnessPage />);
+      renderWithProviders(<FitnessPage />);
 
       // Verify getWorkouts was called on mount
       expect(workoutAPI.getWorkouts).toHaveBeenCalled();
@@ -565,7 +586,7 @@ describe('FitnessPage', () => {
 
       workoutAPI.getWorkouts.mockResolvedValue({ workouts: mockWorkouts });
 
-      render(<FitnessPage />);
+      renderWithProviders(<FitnessPage />);
 
       await waitFor(() => {
         expect(screen.getByText(/total workouts/i)).toBeInTheDocument();
@@ -595,7 +616,7 @@ describe('FitnessPage', () => {
 
       workoutAPI.getWorkouts.mockResolvedValue({ workouts: mockWorkouts });
 
-      render(<FitnessPage />);
+      renderWithProviders(<FitnessPage />);
 
       await waitFor(() => {
         // Changed from "Last 7 Days" to "This Week"
@@ -620,7 +641,7 @@ describe('FitnessPage', () => {
 
       workoutAPI.getWorkouts.mockResolvedValue({ workouts: mockWorkouts });
 
-      render(<FitnessPage />);
+      renderWithProviders(<FitnessPage />);
 
       // Verify workout from previous session is loaded
       await waitFor(() => {

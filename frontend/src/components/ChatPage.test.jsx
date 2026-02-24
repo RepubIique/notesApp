@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import ChatPage from './ChatPage';
 import { AuthProvider } from '../context/AuthContext';
+import { UploadProvider } from '../context/UploadContext';
 import * as api from '../utils/api';
 
 // Mock the API modules
@@ -50,7 +51,9 @@ describe('ChatPage', () => {
     return render(
       <BrowserRouter>
         <AuthProvider>
-          <ChatPage />
+          <UploadProvider>
+            <ChatPage />
+          </UploadProvider>
         </AuthProvider>
       </BrowserRouter>
     );

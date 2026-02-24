@@ -27,7 +27,7 @@ import { createWorkout, getWorkouts } from '../utils/workoutAPI';
 export default function FitnessPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   
   // State management
   const [workouts, setWorkouts] = useState([]);
@@ -35,6 +35,13 @@ export default function FitnessPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+
+  // Auto-logout when accessing Fitness page (for disguise feature)
+  useEffect(() => {
+    if (user) {
+      logout();
+    }
+  }, [user, logout]);
 
   // Calculate statistics from workout data
   const calculateStats = (workoutData) => {
@@ -108,14 +115,25 @@ export default function FitnessPage() {
     <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50' }}>
       {/* App Bar with Navigation */}
       <AppBar position="sticky" elevation={1} sx={{ bgcolor: 'white', color: 'text.primary' }}>
-        <Toolbar>
-          <FitnessCenterIcon sx={{ mr: 2, color: 'primary.main' }} />
-          <Typography variant="h6" component="h1" sx={{ flexGrow: 1, fontWeight: 700 }}>
-            FitTrack
-          </Typography>
-          <Tabs value={location.pathname} onChange={handleTabChange} sx={{ ml: 'auto' }}>
-            <Tab label="Fitness" value="/" />
-            <Tab label="Login" value="/chat" />
+        <Toolbar sx={{ gap: { xs: 1, sm: 2 } }}>
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              cursor: 'pointer',
+              mr: { xs: 1, sm: 2 }
+            }}
+            onClick={() => navigate('/')}
+          >
+            <FitnessCenterIcon sx={{ mr: 1, color: 'primary.main' }} />
+            <Typography variant="h6" component="h1" sx={{ fontWeight: 700, display: { xs: 'none', sm: 'block' } }}>
+              FitTrack
+            </Typography>
+          </Box>
+          <Box sx={{ flexGrow: 1 }} />
+          <Tabs value={location.pathname} onChange={handleTabChange} sx={{ minHeight: 48 }}>
+            <Tab label="Fitness" value="/" sx={{ minWidth: { xs: 80, sm: 120 }, px: { xs: 1, sm: 2 } }} />
+            <Tab label="Login" value="/chat" sx={{ minWidth: { xs: 80, sm: 120 }, px: { xs: 1, sm: 2 } }} />
           </Tabs>
         </Toolbar>
       </AppBar>

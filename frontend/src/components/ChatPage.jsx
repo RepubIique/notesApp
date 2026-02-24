@@ -20,6 +20,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import useIdleTimer from '../hooks/useIdleTimer';
 import MessageList from './MessageList';
 import MessageComposer from './MessageComposer';
+import ImageLightbox from './ImageLightbox';
 import { messageAPI, imageAPI } from '../utils/api';
 
 // Map role to display name
@@ -34,8 +35,16 @@ function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [otherUserActivity, setOtherUserActivity] = useState(null);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const pollingIntervalRef = useRef(null);
   const visibleMessagesRef = useRef(new Set());
+  const initialLoadRef = useRef(true);
+  
+  // Lightbox state
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState([]);
+  const [lightboxInitialIndex, setLightboxInitialIndex] = useState(0);
   
   // FAB dragging state
   const [fabPosition, setFabPosition] = useState({ bottom: 80, right: 24 });
@@ -52,17 +61,45 @@ function ChatPage() {
     fetchCurrentUser();
   }, [user]);
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+    }
+  }, [user, navigate]);
+
   // Start polling for messages and activity every 2 seconds
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch messages and activity in parallel
+        // Only fetch the latest 50 messages for polling (don't replace older loaded messages)
         const [messagesResponse, activityResponse] = await Promise.all([
           messageAPI.getMessages(50),
           messageAPI.getActivity()
         ]);
         
-        setMessages(messagesResponse.messages || []);
+        const latestMessages = messagesResponse.messages || [];
+        
+        // On initial load, just set the messages
+        if (initialLoadRef.current) {
+          initialLoadRef.current = false;
+          setMessages(latestMessages);
+          setHasMoreMessages(latestMessages.length === 50);
+        } else {
+          // For subsequent polls, merge with existing messages
+          // Keep older messages that were loaded via pagination
+          setMessages(prev => {
+            // Get IDs of latest messages
+            const latestIds = new Set(latestMessages.map(m => m.id));
+            
+            // Keep older messages that aren't in the latest batch
+            const olderMessages = prev.filter(m => !latestIds.has(m.id));
+            
+            // Combine: latest messages first, then older messages
+            return [...latestMessages, ...olderMessages];
+          });
+        }
+        
         setOtherUserActivity(activityResponse.activity);
       } catch (error) {
         console.error('Failed to fetch data:', error);
@@ -168,6 +205,91 @@ function ChatPage() {
     }
   };
 
+  // Handle image click to open lightbox
+  const handleImageClick = async (messageId, imageUrl) => {
+    // Gather all images from the conversation
+    const allImages = [];
+    let clickedImageIndex = 0;
+
+    // Iterate through messages to collect all image messages
+    for (const msg of messages) {
+      if (msg.type === 'image' && !msg.deleted) {
+        try {
+          // Fetch the image URL if not already available
+          let url = imageUrl;
+          if (msg.id !== messageId) {
+            const response = await imageAPI.getUrl(msg.id);
+            url = response.url;
+          }
+          
+          // Track the index of the clicked image
+          if (msg.id === messageId) {
+            clickedImageIndex = allImages.length;
+          }
+          
+          allImages.push({
+            id: msg.id,
+            url: url
+          });
+        } catch (error) {
+          console.error(`Failed to fetch URL for image ${msg.id}:`, error);
+        }
+      }
+    }
+
+    // Open lightbox with all images
+    setLightboxImages(allImages);
+    setLightboxInitialIndex(clickedImageIndex);
+    setLightboxOpen(true);
+  };
+
+  // Handle lightbox close
+  const handleLightboxClose = () => {
+    setLightboxOpen(false);
+  };
+
+  // Handle loading more messages (pagination)
+  const handleLoadMore = async () => {
+    if (isLoadingMore || !hasMoreMessages) {
+      return;
+    }
+
+    try {
+      setIsLoadingMore(true);
+      
+      // Get the oldest message timestamp
+      const oldestMessage = messages[messages.length - 1];
+      if (!oldestMessage) {
+        setHasMoreMessages(false);
+        return;
+      }
+
+      // Fetch older messages
+      const response = await messageAPI.getMessages(50, oldestMessage.created_at);
+      const olderMessages = response.messages || [];
+
+      if (olderMessages.length === 0) {
+        setHasMoreMessages(false);
+      } else {
+        // Deduplicate and append older messages
+        setMessages(prev => {
+          const existingIds = new Set(prev.map(m => m.id));
+          const newMessages = olderMessages.filter(m => !existingIds.has(m.id));
+          return [...prev, ...newMessages];
+        });
+        
+        // If we got fewer than 50 messages, we've reached the end
+        if (olderMessages.length < 50) {
+          setHasMoreMessages(false);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load more messages:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
   // FAB drag handlers
   const handleFabMouseDown = (e) => {
     e.preventDefault();
@@ -240,24 +362,40 @@ function ChatPage() {
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', bgcolor: 'grey.50' }}>
       {/* App Bar with Navigation */}
       <AppBar position="sticky" elevation={1} sx={{ bgcolor: 'white', color: 'text.primary' }}>
-        <Toolbar>
-          <FitnessCenterIcon sx={{ mr: 2, color: 'primary.main' }} />
-          <Typography variant="h6" component="h1" sx={{ flexGrow: 1, fontWeight: 700 }}>
-            FitTrack
-          </Typography>
-          <Tabs value={location.pathname} onChange={handleTabChange} sx={{ mr: 2 }}>
-            <Tab label="Fitness" value="/" />
-            <Tab label="Profile" value="/chat" />
+        <Toolbar sx={{ gap: { xs: 1, sm: 2 } }}>
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              cursor: 'pointer',
+              mr: { xs: 1, sm: 2 }
+            }}
+            onClick={() => navigate('/')}
+          >
+            <FitnessCenterIcon sx={{ mr: 1, color: 'primary.main' }} />
+            <Typography variant="h6" component="h1" sx={{ fontWeight: 700, display: { xs: 'none', sm: 'block' } }}>
+              FitTrack
+            </Typography>
+          </Box>
+          <Box sx={{ flexGrow: 1 }} />
+          <Tabs value={location.pathname} onChange={handleTabChange} sx={{ minHeight: 48 }}>
+            <Tab label="Fitness" value="/" sx={{ minWidth: { xs: 80, sm: 120 }, px: { xs: 1, sm: 2 } }} />
+            <Tab label="Profile" value="/chat" sx={{ minWidth: { xs: 80, sm: 120 }, px: { xs: 1, sm: 2 } }} />
           </Tabs>
-          <Chip label={`Logged in as: ${getRoleName(user?.role)}`} sx={{ mr: 2 }} />
+          <Chip 
+            label={`Logged in as: ${getRoleName(user?.role)}`} 
+            sx={{ mx: 1, display: { xs: 'none', md: 'flex' } }} 
+          />
           <Button
             variant="outlined"
             color="error"
-            startIcon={<LogoutIcon />}
+            startIcon={<LogoutIcon sx={{ display: { xs: 'none', sm: 'inline-flex' } }} />}
             onClick={handleLogout}
             size="small"
+            sx={{ minWidth: { xs: 40, sm: 'auto' }, px: { xs: 1, sm: 2 } }}
           >
-            Logout
+            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Logout</Box>
+            <LogoutIcon sx={{ display: { xs: 'inline-flex', sm: 'none' } }} />
           </Button>
         </Toolbar>
       </AppBar>
@@ -282,12 +420,24 @@ function ChatPage() {
           onUnsend={handleUnsend}
           onReact={handleReact}
           onMessageVisible={handleMessageVisible}
+          onImageClick={handleImageClick}
+          onLoadMore={handleLoadMore}
+          hasMoreMessages={hasMoreMessages}
+          isLoadingMore={isLoadingMore}
         />
         <MessageComposer
           onSendText={handleSendText}
           onSendImage={handleSendImage}
         />
       </Box>
+      
+      {/* Image Lightbox */}
+      <ImageLightbox
+        images={lightboxImages}
+        initialIndex={lightboxInitialIndex}
+        open={lightboxOpen}
+        onClose={handleLightboxClose}
+      />
       
       {/* Floating Action Button */}
       <Fab

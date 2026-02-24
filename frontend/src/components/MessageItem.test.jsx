@@ -120,6 +120,65 @@ describe('MessageItem', () => {
       expect(imageAPI.getUrl).toHaveBeenCalledWith('1');
     });
 
+    it('calls onImageClick when image is clicked', async () => {
+      const onImageClick = vi.fn();
+      const message = {
+        id: '1',
+        sender: 'A',
+        type: 'image',
+        image_path: 'path/to/image.jpg',
+        image_name: 'test.jpg',
+        image_mime: 'image/jpeg',
+        created_at: '2024-01-01T10:00:00Z',
+        deleted: false,
+        reactions: []
+      };
+
+      imageAPI.getUrl.mockResolvedValue({ url: 'https://example.com/image.jpg' });
+
+      render(<MessageItem message={message} isOwn={false} onImageClick={onImageClick} />);
+
+      // Wait for image to load
+      await waitFor(() => {
+        const img = screen.getByAltText('test.jpg');
+        expect(img).toBeInTheDocument();
+      });
+
+      // Click the image
+      const img = screen.getByAltText('test.jpg');
+      fireEvent.click(img);
+
+      // Verify onImageClick was called with correct parameters
+      expect(onImageClick).toHaveBeenCalledWith('1', 'https://example.com/image.jpg');
+    });
+
+    it('applies cursor pointer style to images', async () => {
+      const message = {
+        id: '1',
+        sender: 'A',
+        type: 'image',
+        image_path: 'path/to/image.jpg',
+        image_name: 'test.jpg',
+        image_mime: 'image/jpeg',
+        created_at: '2024-01-01T10:00:00Z',
+        deleted: false,
+        reactions: []
+      };
+
+      imageAPI.getUrl.mockResolvedValue({ url: 'https://example.com/image.jpg' });
+
+      render(<MessageItem message={message} isOwn={false} />);
+
+      // Wait for image to load
+      await waitFor(() => {
+        const img = screen.getByAltText('test.jpg');
+        expect(img).toBeInTheDocument();
+      });
+
+      const img = screen.getByAltText('test.jpg');
+      expect(img).toHaveStyle({ cursor: 'pointer' });
+    });
+
     it('displays error placeholder when image fails to load', async () => {
       const message = {
         id: '1',

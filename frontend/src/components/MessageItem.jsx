@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { imageAPI } from '../utils/api';
 
-function MessageItem({ message, isOwn, onUnsend, onReact }) {
+function MessageItem({ message, isOwn, onUnsend, onReact, onImageClick }) {
   const [showActions, setShowActions] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [imageUrl, setImageUrl] = useState(null);
@@ -78,6 +78,9 @@ function MessageItem({ message, isOwn, onUnsend, onReact }) {
                 alt={message.image_name || 'Shared image'} 
                 style={styles.image}
                 onError={() => setImageError(true)}
+                onClick={() => onImageClick && onImageClick(message.id, imageUrl)}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.85'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
               />
             ) : (
               <div style={styles.imageLoading}>Loading image...</div>
@@ -192,7 +195,9 @@ const styles = {
     maxWidth: '100%',
     maxHeight: '400px',
     borderRadius: '4px',
-    display: 'block'
+    display: 'block',
+    cursor: 'pointer',
+    transition: 'opacity 0.2s ease-in-out'
   },
   imageLoading: {
     padding: '2rem',

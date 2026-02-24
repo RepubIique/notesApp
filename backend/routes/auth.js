@@ -51,12 +51,12 @@ router.post('/login', loginLimiter, async (req, res) => {
     // Generate JWT token
     const token = generateToken(role, JWT_SECRET);
     
-    // Set HttpOnly cookie (for same-origin)
+    // Set HttpOnly session cookie (cleared when browser closes)
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      // No maxAge = session cookie (cleared when browser closes)
     });
     
     // Also return token in response (for cross-origin)

@@ -17,3 +17,19 @@ global.IntersectionObserver = class IntersectionObserver {
     return [];
   }
 };
+
+// Mock Worker for tests (jsdom doesn't support Web Workers)
+global.Worker = class Worker {
+  constructor(url) {
+    this.url = url;
+    this.onmessage = null;
+  }
+  
+  postMessage(message) {
+    // Mock worker - do nothing in tests
+  }
+  
+  terminate() {
+    // Mock terminate
+  }
+};

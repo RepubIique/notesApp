@@ -1,11 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
 import MessageItem from './MessageItem';
 
-function MessageList({ messages, currentUser, onUnsend, onReact, onLoadMore, onMessageVisible }) {
+function MessageList({ messages, currentUser, onUnsend, onReact, onLoadMore, onMessageVisible, onImageClick, hasMoreMessages, isLoadingMore }) {
   const listRef = useRef(null);
   const [prevMessageCount, setPrevMessageCount] = useState(0);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const observerRef = useRef(null);
+  const loadMoreTriggerRef = useRef(null);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -47,13 +48,38 @@ function MessageList({ messages, currentUser, onUnsend, onReact, onLoadMore, onM
     };
   }, [messages, onMessageVisible]);
 
+  // Set up Intersection Observer for load more trigger
+  useEffect(() => {
+    if (!onLoadMore || !hasMoreMessages || !loadMoreTriggerRef.current) return;
+
+    const loadMoreObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !isLoadingMore) {
+            onLoadMore();
+          }
+        });
+      },
+      {
+        root: listRef.current,
+        threshold: 0.1
+      }
+    );
+
+    loadMoreObserver.observe(loadMoreTriggerRef.current);
+
+    return () => {
+      loadMoreObserver.disconnect();
+    };
+  }, [onLoadMore, hasMoreMessages, isLoadingMore]);
+
   const scrollToBottom = () => {
     if (listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight;
     }
   };
 
-  // Handle scroll event for pagination
+  // Handle scroll event for detecting bottom position
   const handleScroll = () => {
     if (!listRef.current) return;
 
@@ -62,11 +88,6 @@ function MessageList({ messages, currentUser, onUnsend, onReact, onLoadMore, onM
     // Check if user is at the bottom
     const atBottom = scrollHeight - scrollTop - clientHeight < 50;
     setIsAtBottom(atBottom);
-
-    // Load more messages when scrolled to top
-    if (scrollTop === 0 && onLoadMore) {
-      onLoadMore();
-    }
   };
 
   return (
@@ -80,17 +101,31 @@ function MessageList({ messages, currentUser, onUnsend, onReact, onLoadMore, onM
           No messages yet. Start the conversation!
         </div>
       ) : (
-        // Display messages in newest-first order (reverse chronological)
-        messages.map((message) => (
-          <div key={message.id} data-message-id={message.id}>
-            <MessageItem
-              message={message}
-              isOwn={message.sender === currentUser}
-              onUnsend={onUnsend}
-              onReact={onReact}
-            />
-          </div>
-        ))
+        <>
+          {/* Display messages in newest-first order (reverse chronological) */}
+          {messages.map((message) => (
+            <div key={message.id} data-message-id={message.id}>
+              <MessageItem
+                message={message}
+                isOwn={message.sender === currentUser}
+                onUnsend={onUnsend}
+                onReact={onReact}
+                onImageClick={onImageClick}
+              />
+            </div>
+          ))}
+          
+          {/* Load more indicator at the end (top of chat in reverse order) */}
+          {hasMoreMessages && (
+            <div ref={loadMoreTriggerRef} style={styles.loadMoreContainer}>
+              {isLoadingMore ? (
+                <div style={styles.loadingText}>Loading older messages...</div>
+              ) : (
+                <div style={styles.loadMoreText}>Scroll up to load older messages</div>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -110,6 +145,19 @@ const styles = {
     color: '#666',
     padding: '2rem',
     fontSize: '0.875rem'
+  },
+  loadMoreContainer: {
+    textAlign: 'center',
+    padding: '1rem',
+    color: '#666'
+  },
+  loadingText: {
+    fontSize: '0.875rem',
+    fontStyle: 'italic'
+  },
+  loadMoreText: {
+    fontSize: '0.875rem',
+    color: '#999'
   }
 };
 
