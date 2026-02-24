@@ -1,11 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { imageAPI } from '../utils/api';
+import apiClient, { imageAPI } from '../utils/api';
+import TranslateButton from './TranslateButton';
+import TranslationToggle from './TranslationToggle';
+import useTranslation from '../hooks/useTranslation';
 
 function MessageItem({ message, isOwn, onUnsend, onReact, onImageClick }) {
   const [showActions, setShowActions] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [imageUrl, setImageUrl] = useState(null);
   const [imageError, setImageError] = useState(false);
+  
+  // Translation state - initialize from message data
+  const [translation, setTranslation] = useState(() => {
+    // If message has translations, use the first one (most recent)
+    if (message.translations && message.translations.length > 0) {
+      return {
+        sourceLanguage: message.translations[0].source_language,
+        targetLanguage: message.translations[0].target_language,
+        translatedText: message.translations[0].translated_text
+      };
+    }
+    return null;
+  });
+  
+  // Initialize showOriginal from user preference, default to true
+  const [showOriginal, setShowOriginal] = useState(() => {
+    if (message.translation_preference) {
+      return message.translation_preference.show_original;
+    }
+    return true;
+  });
+  
+  const { translate, loading: translating, error: translationError } = useTranslation(message.id);
 
   // Common emojis for the reaction picker
   const commonEmojis = ['👍', '❤️', '😂', '😮', '😢', '🙏', '🎉', '🔥'];
@@ -30,6 +56,51 @@ function MessageItem({ message, isOwn, onUnsend, onReact, onImageClick }) {
       onReact(message.id, emoji);
     }
     setShowEmojiPicker(false);
+  };
+
+  // Handle translation button click
+  const handleTranslateClick = async () => {
+    // Determine target language based on message content
+    // Simple detection: if message contains Chinese characters, translate to English
+    // Otherwise, translate to Chinese (simplified)
+    const chineseRegex = /[\u4e00-\u9fff]/;
+    const targetLanguage = chineseRegex.test(message.text) ? 'en' : 'zh-CN';
+    
+    const result = await translate(targetLanguage);
+    if (result) {
+      setTranslation(result);
+      setShowOriginal(false); // Show translation after successful translation
+      
+      // Save preference to backend
+      try {
+        await apiClient.post('/api/translations/preferences', {
+          messageId: message.id,
+          showOriginal: false,
+          targetLanguage: result.targetLanguage
+        });
+      } catch (error) {
+        console.error('Failed to save translation preference:', error);
+        // Don't block the UI - preference will be saved on next toggle
+      }
+    }
+  };
+
+  // Handle toggle between original and translated text
+  const handleToggle = async () => {
+    const newShowOriginal = !showOriginal;
+    setShowOriginal(newShowOriginal);
+    
+    // Save preference to backend
+    try {
+      await apiClient.post('/api/translations/preferences', {
+        messageId: message.id,
+        showOriginal: newShowOriginal,
+        targetLanguage: translation?.targetLanguage
+      });
+    } catch (error) {
+      console.error('Failed to save translation preference:', error);
+      // Don't revert the UI state - the preference will be saved on next successful toggle
+    }
   };
 
   // Group reactions by emoji and count them
@@ -64,10 +135,34 @@ function MessageItem({ message, isOwn, onUnsend, onReact, onImageClick }) {
             color: isOwn ? 'rgba(255,255,255,0.7)' : '#999'
           }}>[Message deleted]</div>
         ) : message.type === 'text' ? (
-          <div style={{
-            ...styles.textContent,
-            color: isOwn ? '#fff' : '#333'
-          }}>{message.text}</div>
+          <>
+            <div style={{
+              ...styles.textContent,
+              color: isOwn ? '#fff' : '#333'
+            }}>
+              {/* Display translated text or original text based on toggle state */}
+              {!showOriginal && translation ? translation.translatedText : message.text}
+            </div>
+            
+            {/* Translation toggle - shown when translation exists */}
+            {translation && (
+              <div style={styles.translationToggleContainer}>
+                <TranslationToggle
+                  showOriginal={showOriginal}
+                  onToggle={handleToggle}
+                  sourceLanguage={translation.sourceLanguage}
+                  targetLanguage={translation.targetLanguage}
+                />
+              </div>
+            )}
+            
+            {/* Translation error message */}
+            {translationError && (
+              <div style={styles.translationError}>
+                {translationError.message || 'Translation failed'}
+              </div>
+            )}
+          </>
         ) : message.type === 'image' ? (
           <div style={styles.imageContainer}>
             {imageError ? (
@@ -100,7 +195,7 @@ function MessageItem({ message, isOwn, onUnsend, onReact, onImageClick }) {
         )}
 
         {/* Action buttons (shown on hover) */}
-        {showActions && (
+        {showActions && !message.deleted && (
           <div style={{...styles.actionsContainer, ...(isOwn ? styles.actionsRight : styles.actionsLeft)}}>
             {/* Emoji reaction button */}
             <button 
@@ -111,8 +206,24 @@ function MessageItem({ message, isOwn, onUnsend, onReact, onImageClick }) {
               😊
             </button>
 
+            {/* Translate button (only for text messages) */}
+            {message.type === 'text' && (
+              <div style={styles.translateButtonWrapper}>
+                <TranslateButton
+                  messageId={message.id}
+                  messageText={message.text}
+                  currentLanguage={showOriginal ? 'original' : translation?.targetLanguage}
+                  onTranslationComplete={setTranslation}
+                  disabled={translating}
+                  loading={translating}
+                  error={translationError?.message}
+                  onClick={handleTranslateClick}
+                />
+              </div>
+            )}
+
             {/* Unsend button (only for own messages) */}
-            {isOwn && !message.deleted && (
+            {isOwn && (
               <button 
                 style={{...styles.actionButton, ...styles.unsendButton}}
                 onClick={handleUnsendClick}
@@ -290,6 +401,24 @@ const styles = {
   },
   statusIndicator: {
     fontSize: '0.75rem'
+  },
+  translateButtonWrapper: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  translationToggleContainer: {
+    marginTop: '0.5rem',
+    display: 'flex',
+    justifyContent: 'flex-start'
+  },
+  translationError: {
+    marginTop: '0.5rem',
+    padding: '0.5rem',
+    backgroundColor: 'rgba(244, 67, 54, 0.1)',
+    borderRadius: '4px',
+    fontSize: '0.8125rem',
+    color: '#d32f2f'
   }
 };
 

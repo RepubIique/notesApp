@@ -10,6 +10,44 @@ vi.mock('../utils/api', () => ({
   }
 }));
 
+// Mock the translation components
+vi.mock('./TranslateButton', () => ({
+  default: ({ onClick, loading, error, disabled }) => (
+    <button 
+      onClick={onClick} 
+      disabled={disabled}
+      data-testid="translate-button"
+      data-loading={loading}
+      data-error={error}
+    >
+      Translate
+    </button>
+  )
+}));
+
+vi.mock('./TranslationToggle', () => ({
+  default: ({ onToggle, showOriginal, sourceLanguage, targetLanguage }) => (
+    <button 
+      onClick={onToggle}
+      data-testid="translation-toggle"
+      data-show-original={showOriginal}
+      data-source-language={sourceLanguage}
+      data-target-language={targetLanguage}
+    >
+      {showOriginal ? 'Show Translation' : 'Show Original'}
+    </button>
+  )
+}));
+
+// Mock the useTranslation hook
+vi.mock('../hooks/useTranslation', () => ({
+  default: vi.fn(() => ({
+    translate: vi.fn(),
+    loading: false,
+    error: null
+  }))
+}));
+
 describe('MessageItem', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -82,10 +120,9 @@ describe('MessageItem', () => {
       const messageContainer = container.firstChild;
       fireEvent.mouseEnter(messageContainer);
 
-      // Unsend button should not be present for deleted messages
+      // Action buttons should not be present for deleted messages
       const buttons = container.querySelectorAll('button');
-      // Should only have emoji button, not unsend button
-      expect(buttons.length).toBe(1);
+      expect(buttons.length).toBe(0);
     });
   });
 
@@ -425,4 +462,228 @@ describe('MessageItem', () => {
       expect(messageContainer).toHaveStyle({ alignSelf: 'flex-start' });
     });
   });
+
+  describe('Translation Functionality', () => {
+    it('shows translate button for text messages on hover', () => {
+      const message = {
+        id: '1',
+        sender: 'A',
+        type: 'text',
+        text: 'Hello world',
+        created_at: '2024-01-01T10:00:00Z',
+        deleted: false,
+        reactions: []
+      };
+
+      const { container } = render(<MessageItem message={message} isOwn={false} />);
+      
+      const messageContainer = container.firstChild;
+      
+      // Hover to show actions
+      fireEvent.mouseEnter(messageContainer);
+
+      // Translate button should be visible
+      expect(screen.getByTestId('translate-button')).toBeInTheDocument();
+    });
+
+    it('does not show translate button for image messages', () => {
+      const message = {
+        id: '1',
+        sender: 'A',
+        type: 'image',
+        image_path: 'path/to/image.jpg',
+        created_at: '2024-01-01T10:00:00Z',
+        deleted: false,
+        reactions: []
+      };
+
+      imageAPI.getUrl.mockResolvedValue({ url: 'https://example.com/image.jpg' });
+
+      const { container } = render(<MessageItem message={message} isOwn={false} />);
+      
+      const messageContainer = container.firstChild;
+      
+      // Hover to show actions
+      fireEvent.mouseEnter(messageContainer);
+
+      // Translate button should not be present for image messages
+      expect(screen.queryByTestId('translate-button')).not.toBeInTheDocument();
+    });
+
+    it('does not show translate button for deleted messages', () => {
+      const message = {
+        id: '1',
+        sender: 'A',
+        type: 'text',
+        text: 'Test',
+        created_at: '2024-01-01T10:00:00Z',
+        deleted: true,
+        reactions: []
+      };
+
+      const { container } = render(<MessageItem message={message} isOwn={false} />);
+      
+      const messageContainer = container.firstChild;
+      
+      // Hover to show actions
+      fireEvent.mouseEnter(messageContainer);
+
+      // Translate button should not be present for deleted messages
+      expect(screen.queryByTestId('translate-button')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Translation State Persistence', () => {
+    it('loads cached translation from message data', () => {
+      const message = {
+        id: '1',
+        sender: 'A',
+        type: 'text',
+        text: 'Hello',
+        created_at: '2024-01-01T10:00:00Z',
+        deleted: false,
+        reactions: [],
+        translations: [
+          {
+            source_language: 'en',
+            target_language: 'zh-CN',
+            translated_text: '你好'
+          }
+        ]
+      };
+
+      render(<MessageItem message={message} isOwn={false} />);
+      
+      // Translation toggle should be present since translation exists
+      expect(screen.getByTestId('translation-toggle')).toBeInTheDocument();
+    });
+
+    it('restores showOriginal preference from message data', () => {
+      const message = {
+        id: '1',
+        sender: 'A',
+        type: 'text',
+        text: 'Hello',
+        created_at: '2024-01-01T10:00:00Z',
+        deleted: false,
+        reactions: [],
+        translations: [
+          {
+            source_language: 'en',
+            target_language: 'zh-CN',
+            translated_text: '你好'
+          }
+        ],
+        translation_preference: {
+          show_original: false,
+          target_language: 'zh-CN'
+        }
+      };
+
+      render(<MessageItem message={message} isOwn={false} />);
+      
+      // Should display translated text since showOriginal is false
+      expect(screen.getByText('你好')).toBeInTheDocument();
+      expect(screen.queryByText('Hello')).not.toBeInTheDocument();
+    });
+
+    it('defaults to showing original when no preference exists', () => {
+      const message = {
+        id: '1',
+        sender: 'A',
+        type: 'text',
+        text: 'Hello',
+        created_at: '2024-01-01T10:00:00Z',
+        deleted: false,
+        reactions: [],
+        translations: [
+          {
+            source_language: 'en',
+            target_language: 'zh-CN',
+            translated_text: '你好'
+          }
+        ]
+      };
+
+      render(<MessageItem message={message} isOwn={false} />);
+      
+      // Should display original text by default
+      expect(screen.getByText('Hello')).toBeInTheDocument();
+      
+      // Toggle should show it's in original mode
+      const toggle = screen.getByTestId('translation-toggle');
+      expect(toggle).toHaveAttribute('data-show-original', 'true');
+    });
+
+    it('displays original text when showOriginal preference is true', () => {
+      const message = {
+        id: '1',
+        sender: 'A',
+        type: 'text',
+        text: 'Hello',
+        created_at: '2024-01-01T10:00:00Z',
+        deleted: false,
+        reactions: [],
+        translations: [
+          {
+            source_language: 'en',
+            target_language: 'zh-CN',
+            translated_text: '你好'
+          }
+        ],
+        translation_preference: {
+          show_original: true,
+          target_language: 'zh-CN'
+        }
+      };
+
+      render(<MessageItem message={message} isOwn={false} />);
+      
+      // Should display original text
+      expect(screen.getByText('Hello')).toBeInTheDocument();
+      expect(screen.queryByText('你好')).not.toBeInTheDocument();
+    });
+
+    it('handles messages without translations', () => {
+      const message = {
+        id: '1',
+        sender: 'A',
+        type: 'text',
+        text: 'Hello',
+        created_at: '2024-01-01T10:00:00Z',
+        deleted: false,
+        reactions: []
+      };
+
+      render(<MessageItem message={message} isOwn={false} />);
+      
+      // Should display original text
+      expect(screen.getByText('Hello')).toBeInTheDocument();
+      
+      // Translation toggle should not be present
+      expect(screen.queryByTestId('translation-toggle')).not.toBeInTheDocument();
+    });
+
+    it('handles messages with empty translations array', () => {
+      const message = {
+        id: '1',
+        sender: 'A',
+        type: 'text',
+        text: 'Hello',
+        created_at: '2024-01-01T10:00:00Z',
+        deleted: false,
+        reactions: [],
+        translations: []
+      };
+
+      render(<MessageItem message={message} isOwn={false} />);
+      
+      // Should display original text
+      expect(screen.getByText('Hello')).toBeInTheDocument();
+      
+      // Translation toggle should not be present
+      expect(screen.queryByTestId('translation-toggle')).not.toBeInTheDocument();
+    });
+  });
 });
+
