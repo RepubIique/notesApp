@@ -63,3 +63,28 @@ export const getWorkouts = async () => {
     }
   }
 };
+
+/**
+ * Delete a workout entry
+ * @param {number} workoutId - The ID of the workout to delete
+ * @returns {Promise<{message: string}>} Success message
+ * @throws {Error} Network error or validation error
+ */
+export const deleteWorkout = async (workoutId) => {
+  try {
+    const response = await workoutClient.delete(`/api/workouts/${workoutId}`);
+    return response.data;
+  } catch (error) {
+    // Handle network errors gracefully
+    if (error.response) {
+      // Server responded with error status
+      throw new Error(error.response.data.message || 'Failed to delete workout');
+    } else if (error.request) {
+      // Request made but no response received
+      throw new Error('Unable to connect to server. Please check your connection.');
+    } else {
+      // Something else happened
+      throw new Error('An unexpected error occurred. Please try again.');
+    }
+  }
+};

@@ -102,6 +102,16 @@ export default function FitnessPage() {
     }
   };
 
+  // Handle workout deletion
+  const handleWorkoutDeleted = (workoutId) => {
+    // Remove workout from local state
+    const updatedWorkouts = workouts.filter(w => w.id !== workoutId);
+    setWorkouts(updatedWorkouts);
+    
+    // Recalculate statistics
+    setStats(calculateStats(updatedWorkouts));
+  };
+
   const handleTabChange = (event, newValue) => {
     if (newValue === '/chat' && !user) {
       // Redirect to login if trying to access chat without authentication
@@ -188,7 +198,7 @@ export default function FitnessPage() {
                 </Typography>
               </Box>
               <Box sx={{ maxHeight: 600, overflowY: 'auto', pr: 1 }}>
-                <WorkoutList workouts={workouts} loading={loading} />
+                <WorkoutList workouts={workouts} loading={loading} onWorkoutDeleted={handleWorkoutDeleted} />
               </Box>
             </Paper>
           </Grid>
