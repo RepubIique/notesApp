@@ -328,6 +328,10 @@ function MessageComposer({ onSendText, onSendImage, conversationId = 'default' }
       const result = await sendRecording(conversationId);
       
       if (result.success) {
+        // Clear text input when voice message is sent
+        setText('');
+        clearTypingStatus();
+        
         // Show success feedback (Requirement 8.5)
         setShowVoiceSuccess(true);
         setTimeout(() => setShowVoiceSuccess(false), 3000);
