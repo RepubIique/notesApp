@@ -163,3 +163,26 @@ export const imageAPI = {
     return response.data;
   }
 };
+
+// Voice Message API functions
+export const voiceMessageAPI = {
+  /**
+   * Delete a voice message
+   * @param {string} messageId - The ID of the voice message to delete
+   * @returns {Promise<{success: boolean, message: string}>} Success status
+   */
+  deleteVoiceMessage: async (messageId) => {
+    const response = await apiClient.delete(`/api/voice-messages/${messageId}`);
+    return response.data;
+  },
+
+  /**
+   * Get signed URL for a voice message
+   * @param {string} messageId - The ID of the voice message
+   * @returns {Promise<{url: string, duration: number}>} The signed URL and duration
+   */
+  getUrl: async (messageId) => {
+    const response = await apiClient.get(`/api/voice-messages/${messageId}`);
+    return response.data;
+  }
+};

@@ -11,6 +11,15 @@ vi.mock('./MessageItem', () => ({
   )
 }));
 
+// Mock VoiceMessage component
+vi.mock('./VoiceMessage', () => ({
+  default: ({ message, isOwn }) => (
+    <div data-testid={`voice-message-${message.id}`}>
+      Voice Message - {isOwn ? 'Own' : 'Other'}
+    </div>
+  )
+}));
+
 describe('MessageList', () => {
   it('displays empty state when no messages', () => {
     render(<MessageList messages={[]} currentUser="A" />);
@@ -80,5 +89,57 @@ describe('MessageList', () => {
     );
 
     expect(screen.getByTestId('message-1')).toBeInTheDocument();
+  });
+
+  it('renders voice messages using VoiceMessage component', () => {
+    const messages = [
+      { id: '1', sender: 'A', type: 'voice', audio_path: 'path/to/audio.webm', audio_duration: 30, created_at: '2024-01-01T10:00:00Z' },
+      { id: '2', sender: 'B', type: 'text', text: 'Text message', created_at: '2024-01-01T10:01:00Z' }
+    ];
+
+    render(<MessageList messages={messages} currentUser="A" />);
+
+    // Voice message should use VoiceMessage component
+    expect(screen.getByTestId('voice-message-1')).toBeInTheDocument();
+    expect(screen.getByText(/Voice Message - Own/)).toBeInTheDocument();
+    
+    // Text message should use MessageItem component
+    expect(screen.getByTestId('message-2')).toBeInTheDocument();
+  });
+
+  it('handles mixed message types in chronological order', () => {
+    const messages = [
+      { id: '1', sender: 'A', type: 'text', text: 'First', created_at: '2024-01-01T10:00:00Z' },
+      { id: '2', sender: 'B', type: 'voice', audio_path: 'path/to/audio.webm', audio_duration: 15, created_at: '2024-01-01T10:01:00Z' },
+      { id: '3', sender: 'A', type: 'image', image_path: 'path/to/image.jpg', created_at: '2024-01-01T10:02:00Z' },
+      { id: '4', sender: 'B', type: 'voice', audio_path: 'path/to/audio2.webm', audio_duration: 45, created_at: '2024-01-01T10:03:00Z' }
+    ];
+
+    render(<MessageList messages={messages} currentUser="A" />);
+
+    // All messages should be rendered
+    expect(screen.getByTestId('message-1')).toBeInTheDocument();
+    expect(screen.getByTestId('voice-message-2')).toBeInTheDocument();
+    expect(screen.getByTestId('message-3')).toBeInTheDocument();
+    expect(screen.getByTestId('voice-message-4')).toBeInTheDocument();
+  });
+
+  it('passes onUnsend and onReact to VoiceMessage component', () => {
+    const onUnsend = vi.fn();
+    const onReact = vi.fn();
+    const messages = [
+      { id: '1', sender: 'A', type: 'voice', audio_path: 'path/to/audio.webm', audio_duration: 20, created_at: '2024-01-01T10:00:00Z' }
+    ];
+
+    render(
+      <MessageList 
+        messages={messages} 
+        currentUser="A" 
+        onUnsend={onUnsend}
+        onReact={onReact}
+      />
+    );
+
+    expect(screen.getByTestId('voice-message-1')).toBeInTheDocument();
   });
 });

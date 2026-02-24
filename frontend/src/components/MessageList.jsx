@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import MessageItem from './MessageItem';
+import VoiceMessage from './VoiceMessage';
 
 function MessageList({ messages, currentUser, onUnsend, onReact, onLoadMore, onMessageVisible, onImageClick, hasMoreMessages, isLoadingMore }) {
   const listRef = useRef(null);
@@ -105,13 +106,22 @@ function MessageList({ messages, currentUser, onUnsend, onReact, onLoadMore, onM
           {/* Display messages in newest-first order (reverse chronological) */}
           {messages.map((message) => (
             <div key={message.id} data-message-id={message.id}>
-              <MessageItem
-                message={message}
-                isOwn={message.sender === currentUser}
-                onUnsend={onUnsend}
-                onReact={onReact}
-                onImageClick={onImageClick}
-              />
+              {message.type === 'voice' ? (
+                <VoiceMessage
+                  message={message}
+                  isOwn={message.sender === currentUser}
+                  onUnsend={onUnsend}
+                  onReact={onReact}
+                />
+              ) : (
+                <MessageItem
+                  message={message}
+                  isOwn={message.sender === currentUser}
+                  onUnsend={onUnsend}
+                  onReact={onReact}
+                  onImageClick={onImageClick}
+                />
+              )}
             </div>
           ))}
           

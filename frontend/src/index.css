@@ -108,3 +108,46 @@ a[style*="position: fixed"]:hover {
 .animate-success-pulse {
   animation: success-pulse 0.5s ease-out;
 }
+
+/* Voice Message Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.1);
+  }
+}
+
+/* Smooth transitions for voice message elements */
+.voice-message-enter {
+  animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.voice-player-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

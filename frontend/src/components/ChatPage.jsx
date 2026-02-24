@@ -8,7 +8,12 @@ import {
   Tabs,
   Tab,
   Fab,
-  Chip
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
 } from '@mui/material';
 import {
   FitnessCenter as FitnessCenterIcon,
@@ -21,7 +26,7 @@ import useIdleTimer from '../hooks/useIdleTimer';
 import MessageList from './MessageList';
 import MessageComposer from './MessageComposer';
 import ImageLightbox from './ImageLightbox';
-import { messageAPI, imageAPI } from '../utils/api';
+import { messageAPI, imageAPI, voiceMessageAPI } from '../utils/api';
 
 // Map role to display name
 const getRoleName = (role) => {
@@ -50,6 +55,10 @@ function ChatPage() {
   const [fabPosition, setFabPosition] = useState({ bottom: 80, right: 24 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef({ x: 0, y: 0, bottom: 80, right: 24 });
+  
+  // Confirmation dialog state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState(null);
 
   // Fetch current user role on mount
   useEffect(() => {
@@ -163,12 +172,45 @@ function ChatPage() {
 
   // Handle message unsend
   const handleUnsend = async (messageId) => {
+    // Find the message to check if it's a voice message
+    const message = messages.find(m => m.id === messageId);
+    
+    // If it's a voice message, show confirmation dialog
+    if (message && message.type === 'voice') {
+      setMessageToDelete(messageId);
+      setDeleteConfirmOpen(true);
+      return;
+    }
+    
+    // For non-voice messages, delete immediately
     try {
       await messageAPI.unsend(messageId);
       // Updated message will appear in the next poll
     } catch (error) {
       console.error('Failed to unsend message:', error);
     }
+  };
+
+  // Handle confirmed voice message deletion
+  const handleConfirmDelete = async () => {
+    if (!messageToDelete) return;
+    
+    try {
+      await voiceMessageAPI.deleteVoiceMessage(messageToDelete);
+      // Updated message will appear in the next poll
+      setDeleteConfirmOpen(false);
+      setMessageToDelete(null);
+    } catch (error) {
+      console.error('Failed to delete voice message:', error);
+      // Show error to user (could add a snackbar here)
+      alert('Failed to delete voice message. Please try again.');
+    }
+  };
+
+  // Handle cancel deletion
+  const handleCancelDelete = () => {
+    setDeleteConfirmOpen(false);
+    setMessageToDelete(null);
   };
 
   // Handle emoji reaction
@@ -438,6 +480,31 @@ function ChatPage() {
         open={lightboxOpen}
         onClose={handleLightboxClose}
       />
+      
+      {/* Voice Message Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={handleCancelDelete}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">
+          Delete Voice Message?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete this voice message? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDelete} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmDelete} color="error" autoFocus>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
       
       {/* Floating Action Button */}
       <Fab
