@@ -10,6 +10,9 @@ This directory contains SQL migration files for setting up the Supabase database
 4. **004_create_storage_bucket.md** - Instructions for creating the images storage bucket
 5. **005_add_message_status.sql** - Adds message status tracking
 6. **006_create_workouts_table.sql** - Creates the workouts table for fitness tracker (public access)
+7. **007_add_voice_message_support.sql** - Adds voice message support to messages table
+8. **008_create_voice_messages_bucket.md** - Instructions for creating the voice-messages storage bucket
+9. **009_create_translations_table.sql** - Creates the translations table for message translation caching
 
 ## Running Migrations
 
@@ -18,9 +21,9 @@ This directory contains SQL migration files for setting up the Supabase database
 1. Log in to your Supabase project dashboard
 2. Navigate to **SQL Editor** in the left sidebar
 3. Click **New query**
-4. Copy and paste the contents of each migration file in order (001, 002, 003, 005, 006)
+4. Copy and paste the contents of each migration file in order (001, 002, 003, 005, 006, 007, 009)
 5. Click **Run** for each migration
-6. Follow the instructions in `004_create_storage_bucket.md` to set up the storage bucket
+6. Follow the instructions in `004_create_storage_bucket.md` and `008_create_voice_messages_bucket.md` to set up the storage buckets
 
 ### Option 2: Supabase CLI
 
@@ -60,7 +63,7 @@ After running all migrations, verify the schema:
 SELECT table_name 
 FROM information_schema.tables 
 WHERE table_schema = 'public' 
-AND table_name IN ('messages', 'reactions', 'push_subscriptions', 'workouts');
+AND table_name IN ('messages', 'reactions', 'push_subscriptions', 'workouts', 'translations');
 
 -- Check messages table structure
 \d messages
@@ -74,11 +77,14 @@ AND table_name IN ('messages', 'reactions', 'push_subscriptions', 'workouts');
 -- Check workouts table structure
 \d workouts
 
+-- Check translations table structure
+\d translations
+
 -- Verify indexes
 SELECT indexname, tablename 
 FROM pg_indexes 
 WHERE schemaname = 'public' 
-AND tablename IN ('messages', 'reactions', 'push_subscriptions', 'workouts');
+AND tablename IN ('messages', 'reactions', 'push_subscriptions', 'workouts', 'translations');
 
 -- Verify RLS policies on workouts table
 SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual, with_check
@@ -118,6 +124,14 @@ SELECT * FROM storage.buckets WHERE id = 'images';
 - Indexed on `created_at` for chronological queries
 - Completely separate from chat-related tables
 
+### translations Table
+- Stores cached translations for messages
+- Foreign key to messages with CASCADE DELETE
+- Unique constraint on (message_id, source_language, target_language) prevents duplicate translations
+- Indexed on `message_id` for efficient lookups
+- Indexed on language pair for translation queries
+- Supports English, Chinese (simplified), and Chinese (traditional)
+
 ### images Storage Bucket
 - Private bucket for image uploads
 - 25MB file size limit
@@ -130,6 +144,7 @@ If you need to rollback the migrations:
 
 ```sql
 -- Drop tables in reverse order (respects foreign keys)
+DROP TABLE IF EXISTS translations CASCADE;
 DROP TABLE IF EXISTS workouts CASCADE;
 DROP TABLE IF EXISTS reactions CASCADE;
 DROP TABLE IF EXISTS push_subscriptions CASCADE;

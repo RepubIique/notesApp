@@ -13,6 +13,7 @@ import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
 import request from 'supertest';
 import { hashPassword } from './services/auth.js';
+import { supabase } from './config/supabase.js';
 import app from './server.js';
 
 // Set up password hashes after importing hashPassword
@@ -25,9 +26,31 @@ describe('End-to-End Flows', () => {
   let messageIdFromA;
   let messageIdFromB;
   let imageMessageId;
+  const testMessageIds = []; // Track all test message IDs for cleanup
 
   // Note: server.js automatically starts listening on import
   // The tests use the running server instance
+
+  // Cleanup after all tests complete
+  after(async () => {
+    console.log('\n🧹 Cleaning up test data...');
+    
+    try {
+      // Delete all messages created during tests (cascade deletes reactions, translations, etc.)
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .in('id', testMessageIds);
+
+      if (error) {
+        console.error('❌ Error cleaning up test messages:', error);
+      } else {
+        console.log(`✅ Cleaned up ${testMessageIds.length} test messages`);
+      }
+    } catch (error) {
+      console.error('❌ Cleanup failed:', error);
+    }
+  });
 
   describe('1. Login as A and B', () => {
     it('should successfully login as identity A', async () => {
@@ -116,6 +139,7 @@ describe('End-to-End Flows', () => {
       assert.strictEqual(response.body.message.deleted, false);
       
       messageIdFromA = response.body.message.id;
+      testMessageIds.push(messageIdFromA); // Track for cleanup
     });
 
     it('should allow identity B to send a text message', async () => {
@@ -131,6 +155,7 @@ describe('End-to-End Flows', () => {
       assert.strictEqual(response.body.message.text, 'Hello from B!');
       
       messageIdFromB = response.body.message.id;
+      testMessageIds.push(messageIdFromB); // Track for cleanup
     });
 
     it('should retrieve messages in newest-first order', async () => {
@@ -190,6 +215,7 @@ describe('End-to-End Flows', () => {
       assert.ok(response.body.message.image_mime);
       
       imageMessageId = response.body.message.id;
+      testMessageIds.push(imageMessageId); // Track for cleanup
     });
 
     it('should retrieve image URL for image message', async () => {
@@ -277,6 +303,7 @@ describe('End-to-End Flows', () => {
         .send({ text: 'Message for reactions' });
       
       reactionMessageId = response.body.message.id;
+      testMessageIds.push(reactionMessageId); // Track for cleanup
     });
 
     it('should allow identity A to add a reaction to a message', async () => {
@@ -394,6 +421,7 @@ describe('End-to-End Flows', () => {
       
       assert.strictEqual(msgA.status, 201);
       const messageAId = msgA.body.message.id;
+      testMessageIds.push(messageAId); // Track for cleanup
 
       // B reads messages
       const readB = await request(app)
@@ -419,6 +447,7 @@ describe('End-to-End Flows', () => {
         .send({ text: 'Reply from B' });
       
       assert.strictEqual(msgB.status, 201);
+      testMessageIds.push(msgB.body.message.id); // Track for cleanup
 
       // A reads updated messages
       const readA = await request(app)

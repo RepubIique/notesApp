@@ -20,7 +20,7 @@ export const createTextMessage = async (sender, text) => {
   return data;
 };
 
-export const getMessages = async (limit = 50, before) => {
+export const getMessages = async (limit = 50, before, userRole = null) => {
   let query = supabase
     .from('messages')
     .select(`
@@ -30,6 +30,14 @@ export const getMessages = async (limit = 50, before) => {
         message_id,
         user_role,
         emoji,
+        created_at
+      ),
+      translations (
+        id,
+        message_id,
+        source_language,
+        target_language,
+        translated_text,
         created_at
       )
     `)
@@ -45,6 +53,33 @@ export const getMessages = async (limit = 50, before) => {
 
   if (error) {
     throw new Error(`Failed to fetch messages: ${error.message}`);
+  }
+
+  // If userRole is provided, fetch translation preferences for this user
+  if (userRole && data && data.length > 0) {
+    const messageIds = data.map(msg => msg.id);
+    
+    const { data: preferences, error: prefError } = await supabase
+      .from('translation_preferences')
+      .select('*')
+      .eq('user_role', userRole)
+      .in('message_id', messageIds);
+
+    if (!prefError && preferences) {
+      // Create a map of message_id to preference
+      const prefMap = new Map(preferences.map(pref => [pref.message_id, pref]));
+      
+      // Attach preferences to messages
+      data.forEach(message => {
+        const pref = prefMap.get(message.id);
+        if (pref) {
+          message.translation_preference = {
+            show_original: pref.show_original,
+            target_language: pref.target_language
+          };
+        }
+      });
+    }
   }
 
   return data;

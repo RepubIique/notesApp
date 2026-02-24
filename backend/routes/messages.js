@@ -17,8 +17,8 @@ router.get('/', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Invalid limit parameter' });
     }
 
-    // Call getMessages function
-    const messages = await getMessages(limit, before);
+    // Call getMessages function with user role for translation preferences
+    const messages = await getMessages(limit, before, req.user.role);
 
     // Mark messages as delivered for the requesting user
     await markMessagesAsDelivered(req.user.role);
