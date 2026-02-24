@@ -27,6 +27,7 @@ import MessageList from './MessageList';
 import MessageComposer from './MessageComposer';
 import ImageLightbox from './ImageLightbox';
 import { messageAPI, imageAPI, voiceMessageAPI } from '../utils/api';
+import { formatLastSeen } from '../utils/dateFormatter';
 
 // Map role to display name
 const getRoleName = (role) => {
@@ -442,15 +443,25 @@ function ChatPage() {
         </Toolbar>
       </AppBar>
 
-      {/* Typing Indicator */}
-      {otherUserActivity?.is_typing && (
-        <Box sx={{ bgcolor: 'info.light', px: 2, py: 1 }}>
-          <Typography variant="body2" color="info.dark">
-            {getRoleName(currentUser === 'A' ? 'B' : 'A')} is typing
-            <span className="typing-dots">
-              <span>.</span><span>.</span><span>.</span>
-            </span>
-          </Typography>
+      {/* Status Bar - Typing Indicator or Last Seen */}
+      {otherUserActivity && (
+        <Box sx={{ bgcolor: otherUserActivity.is_typing ? 'info.light' : 'grey.100', px: 2, py: 0.75 }}>
+          {otherUserActivity.is_typing ? (
+            <Typography variant="body2" color="info.dark">
+              {getRoleName(currentUser === 'A' ? 'B' : 'A')} is typing
+              <span className="typing-dots">
+                <span>.</span><span>.</span><span>.</span>
+              </span>
+            </Typography>
+          ) : (
+            <Typography 
+              variant="caption" 
+              color={formatLastSeen(otherUserActivity.last_seen) === 'online' ? 'success.main' : 'text.secondary'}
+              sx={{ fontWeight: formatLastSeen(otherUserActivity.last_seen) === 'online' ? 600 : 400 }}
+            >
+              {getRoleName(currentUser === 'A' ? 'B' : 'A')} {formatLastSeen(otherUserActivity.last_seen)}
+            </Typography>
+          )}
         </Box>
       )}
 
@@ -509,8 +520,6 @@ function ChatPage() {
       {/* Floating Action Button */}
       <Fab
         color="primary"
-        component="a"
-        href={isDragging ? undefined : "https://facebook.com"}
         sx={{
           position: 'fixed',
           bottom: `${fabPosition.bottom}px`,
@@ -521,10 +530,15 @@ function ChatPage() {
         }}
         onMouseDown={handleFabMouseDown}
         onTouchStart={handleFabTouchStart}
-        onClick={(e) => {
+        onClick={async (e) => {
           if (isDragging) {
             e.preventDefault();
+            return;
           }
+          
+          // Logout before navigating to Facebook
+          await logout();
+          window.location.href = 'https://facebook.com';
         }}
       >
         <FacebookIcon />
