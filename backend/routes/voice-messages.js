@@ -33,12 +33,21 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024 // 10MB in bytes
   },
   fileFilter: (req, file, cb) => {
-    // Only accept audio/* MIME types
-    const validAudioTypes = ['audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/wav'];
+    // Accept audio/* MIME types (including AAC/M4A for Safari/iOS)
+    const validAudioTypes = [
+      'audio/webm',
+      'audio/ogg',
+      'audio/mp4',
+      'audio/mpeg',
+      'audio/wav',
+      'audio/aac',
+      'audio/x-m4a',
+      'audio/m4a'
+    ];
     if (validAudioTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Only audio files are allowed (webm, ogg, mp4, mpeg, wav)'), false);
+      cb(new Error(`Only audio files are allowed. Received: ${file.mimetype}`), false);
     }
   }
 });
@@ -67,14 +76,25 @@ router.post('/', authMiddleware, upload.single('audio'), async (req, res) => {
     }
 
     // Validate audio is valid type (already checked by multer, but double-check)
-    const validAudioTypes = ['audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/wav'];
+    const validAudioTypes = [
+      'audio/webm',
+      'audio/ogg',
+      'audio/mp4',
+      'audio/mpeg',
+      'audio/wav',
+      'audio/aac',
+      'audio/x-m4a',
+      'audio/m4a'
+    ];
     if (!validAudioTypes.includes(req.file.mimetype)) {
       logError(new Error('Invalid audio type'), {
         endpoint: 'POST /api/voice-messages',
         mimetype: req.file.mimetype,
         user: req.user?.role
       });
-      return res.status(400).json({ error: 'Only audio files are allowed (webm, ogg, mp4, mpeg, wav)' });
+      return res.status(400).json({ 
+        error: `Only audio files are allowed. Received: ${req.file.mimetype}` 
+      });
     }
 
     // Get sender from req.user and validate (Requirement 5.1)

@@ -444,7 +444,7 @@ describe('FitnessPage', () => {
       });
 
       // Submit workout
-      const exerciseInput = screen.getByLabelText(/exercise/i);
+      const exerciseInput = screen.getByRole('combobox', { name: /exercise/i });
       const setsInput = screen.getByLabelText(/sets/i);
       const repsInput = screen.getByLabelText(/reps/i);
       const weightInput = screen.getByLabelText(/weight/i);
@@ -462,7 +462,7 @@ describe('FitnessPage', () => {
       });
 
       // Verify app doesn't crash - form should still be visible
-      expect(screen.getByLabelText(/exercise/i)).toBeInTheDocument();
+      expect(screen.getByRole('combobox', { name: /exercise/i })).toBeInTheDocument();
     });
 
     it('should handle API errors without crashing the application', async () => {

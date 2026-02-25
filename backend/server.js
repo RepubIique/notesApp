@@ -31,12 +31,14 @@ import imagesRoutes from './routes/images.js';
 import workoutRoutes from './routes/workouts.js';
 import voiceMessagesRoutes from './routes/voice-messages.js';
 import translationsRoutes from './routes/translations.js';
+import notificationsRoutes from './routes/notifications.js';
 app.use('/api/auth', authRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/images', imagesRoutes);
 app.use('/api/workouts', workoutRoutes);
 app.use('/api/voice-messages', voiceMessagesRoutes);
 app.use('/api/translations', translationsRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 let server;
 

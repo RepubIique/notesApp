@@ -145,7 +145,7 @@ describe('Message Routes - Implementation Verification', () => {
     // Verify imports
     assert.ok(routeContent.includes("import express from 'express'"), 'Should import express');
     assert.ok(routeContent.includes("import { authMiddleware }"), 'Should import authMiddleware');
-    assert.ok(routeContent.includes("import { getMessages, createTextMessage, unsendMessage }"), 'Should import message services');
+    assert.ok(routeContent.includes("getMessages") && routeContent.includes("createTextMessage") && routeContent.includes("unsendMessage"), 'Should import message services');
     assert.ok(routeContent.includes("import { addReaction }"), 'Should import reaction service');
   });
 

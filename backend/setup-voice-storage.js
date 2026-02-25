@@ -16,12 +16,32 @@ async function setupVoiceStorage() {
 
     if (bucketExists) {
       console.log('✓ Bucket "voice-messages" already exists');
+      console.log('Updating bucket to support Safari/iOS audio formats...');
+      
+      // Note: Supabase doesn't support updating bucket config via API
+      // You need to update it manually in the dashboard
+      console.log('\n⚠️  Manual step required:');
+      console.log('Go to Supabase Dashboard → Storage → voice-messages → Configuration');
+      console.log('Add these MIME types to "Allowed MIME types":');
+      console.log('  - audio/aac');
+      console.log('  - audio/x-m4a');
+      console.log('  - audio/m4a');
+      console.log('(Keep existing: audio/webm, audio/ogg, audio/mp4, audio/mpeg, audio/wav)');
     } else {
-      // Create the bucket
+      // Create the bucket with Safari/iOS support
       const { data, error } = await supabase.storage.createBucket('voice-messages', {
         public: false,
         fileSizeLimit: 10485760, // 10MB in bytes
-        allowedMimeTypes: ['audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/wav']
+        allowedMimeTypes: [
+          'audio/webm',
+          'audio/ogg',
+          'audio/mp4',
+          'audio/mpeg',
+          'audio/wav',
+          'audio/aac',
+          'audio/x-m4a',
+          'audio/m4a'
+        ]
       });
 
       if (error) {

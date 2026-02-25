@@ -21,9 +21,11 @@ import {
 } from '@mui/icons-material';
 import { authAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import NotificationIndicator from './NotificationIndicator';
 
 function LoginPage() {
   const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(''); // Dummy email field
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -72,7 +74,8 @@ function LoginPage() {
 
       {/* Login Form */}
       <Container maxWidth="sm" sx={{ display: 'flex', alignItems: 'center', minHeight: 'calc(100vh - 64px)', py: 4 }}>
-        <Paper elevation={2} sx={{ p: 4, width: '100%' }}>
+        <Paper elevation={2} sx={{ p: 4, width: '100%', position: 'relative' }}>
+          <NotificationIndicator />
           <Typography variant="h4" component="h2" align="center" gutterBottom sx={{ fontWeight: 600 }}>
             Login
           </Typography>
@@ -135,12 +138,21 @@ function LoginPage() {
           {/* Password Login */}
           <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email address"
+              disabled={loading}
+              fullWidth
+              variant="outlined"
+            />
+            
+            <TextField
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password"
+              placeholder="Password"
               disabled={loading}
-              autoFocus
               fullWidth
               variant="outlined"
             />

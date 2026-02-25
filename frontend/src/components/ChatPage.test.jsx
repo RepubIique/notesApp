@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import ChatPage from './ChatPage';
 import { AuthProvider } from '../context/AuthContext';
 import { UploadProvider } from '../context/UploadContext';
+import { VoiceRecordingProvider } from '../context/VoiceRecordingContext';
 import * as api from '../utils/api';
 
 // Mock the API modules
@@ -52,7 +53,9 @@ describe('ChatPage', () => {
       <BrowserRouter>
         <AuthProvider>
           <UploadProvider>
-            <ChatPage />
+            <VoiceRecordingProvider>
+              <ChatPage />
+            </VoiceRecordingProvider>
           </UploadProvider>
         </AuthProvider>
       </BrowserRouter>
@@ -63,7 +66,7 @@ describe('ChatPage', () => {
     renderChatPage();
     
     await waitFor(() => {
-      expect(screen.getByText('Chat')).toBeInTheDocument();
+      expect(screen.getByText('FitTrack')).toBeInTheDocument();
     });
   });
 

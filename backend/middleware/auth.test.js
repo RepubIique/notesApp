@@ -8,11 +8,12 @@ process.env.JWT_SECRET = 'test-secret-key-for-testing-only';
 describe('Auth Middleware', () => {
   it('should return 401 when no token is provided', () => {
     const req = {
-      cookies: {}
+      cookies: {},
+      headers: {}
     };
     const res = {
-      status: mock.fn((code) => res),
-      json: mock.fn()
+      status: mock.fn(function(code) { return this; }),
+      json: mock.fn(function() { return this; })
     };
     const next = mock.fn();
 
@@ -34,8 +35,8 @@ describe('Auth Middleware', () => {
       }
     };
     const res = {
-      status: mock.fn((code) => res),
-      json: mock.fn()
+      status: mock.fn(function(code) { return this; }),
+      json: mock.fn(function() { return this; })
     };
     const next = mock.fn();
 
@@ -92,10 +93,12 @@ describe('Auth Middleware', () => {
   });
 
   it('should handle missing cookies object', () => {
-    const req = {};
+    const req = {
+      headers: {}
+    };
     const res = {
-      status: mock.fn((code) => res),
-      json: mock.fn()
+      status: mock.fn(function(code) { return this; }),
+      json: mock.fn(function() { return this; })
     };
     const next = mock.fn();
 

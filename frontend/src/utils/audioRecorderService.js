@@ -159,11 +159,34 @@ class AudioRecorderService {
 
   /**
    * Get MediaRecorder options with codec configuration
-   * Prioritizes WebM/Opus for best compression and browser support
+   * Prioritizes formats based on browser compatibility
+   * Safari/iOS: MP4/AAC, Chrome/Firefox: WebM/Opus
    * @private
    */
   _getMediaRecorderOptions() {
-    // Try different codec options in order of preference
+    // Detect Safari/iOS (they don't support WebM audio well)
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    
+    // For Safari/iOS, prioritize MP4/AAC
+    if (isSafari || isIOS) {
+      const safariOptions = [
+        { mimeType: 'audio/mp4', audioBitsPerSecond: 48000 },
+        { mimeType: 'audio/mp4;codecs=mp4a.40.2', audioBitsPerSecond: 48000 }, // AAC-LC
+        { mimeType: 'audio/aac', audioBitsPerSecond: 48000 },
+        { mimeType: 'audio/webm', audioBitsPerSecond: 48000 }, // Fallback
+        {} // Browser default
+      ];
+      
+      for (const options of safariOptions) {
+        if (!options.mimeType || MediaRecorder.isTypeSupported(options.mimeType)) {
+          console.log('[AudioRecorder] Using format:', options.mimeType || 'browser default', 'for Safari/iOS');
+          return options;
+        }
+      }
+    }
+    
+    // For Chrome/Firefox, use WebM/Opus (better compression)
     const codecOptions = [
       { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 48000 }, // Best quality/size ratio
       { mimeType: 'audio/webm', audioBitsPerSecond: 48000 },
@@ -174,6 +197,7 @@ class AudioRecorderService {
 
     for (const options of codecOptions) {
       if (!options.mimeType || MediaRecorder.isTypeSupported(options.mimeType)) {
+        console.log('[AudioRecorder] Using format:', options.mimeType || 'browser default');
         return options;
       }
     }

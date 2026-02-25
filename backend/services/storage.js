@@ -69,9 +69,18 @@ export const getImageUrl = async (imagePath) => {
 // Upload voice message to Supabase Storage
 export const uploadVoiceMessage = async (audioBuffer, fileName, mimeType) => {
   // Validate MIME type is audio/*
-  const validAudioTypes = ['audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/wav'];
+  const validAudioTypes = [
+    'audio/webm',
+    'audio/ogg',
+    'audio/mp4',
+    'audio/mpeg',
+    'audio/wav',
+    'audio/aac',
+    'audio/x-m4a',
+    'audio/m4a'
+  ];
   if (!mimeType || !validAudioTypes.includes(mimeType)) {
-    throw new Error('Only audio files are allowed (webm, ogg, mp4, mpeg, wav)');
+    throw new Error(`Only audio files are allowed. Received: ${mimeType}`);
   }
 
   // Validate audio buffer
@@ -87,9 +96,9 @@ export const uploadVoiceMessage = async (audioBuffer, fileName, mimeType) => {
 
   // Validate and sanitize file extension
   const extension = path.extname(fileName) || '.webm';
-  const allowedExtensions = ['.webm', '.ogg', '.mp4', '.mpeg', '.mp3', '.wav'];
+  const allowedExtensions = ['.webm', '.ogg', '.mp4', '.mpeg', '.mp3', '.wav', '.aac', '.m4a'];
   if (!allowedExtensions.includes(extension.toLowerCase())) {
-    throw new Error('Invalid audio file extension');
+    throw new Error(`Invalid audio file extension: ${extension}`);
   }
 
   // Generate unique file path with timestamp for collision prevention
