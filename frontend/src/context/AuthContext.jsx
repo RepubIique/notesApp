@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '../utils/api';
+import useIdleTimer from '../hooks/useIdleTimer';
 
 const AuthContext = createContext(null);
 
@@ -35,6 +36,13 @@ export function AuthProvider({ children }) {
       setUser(null);
     }
   };
+
+  // Auto logout after 1 minute of inactivity
+  useIdleTimer(() => {
+    if (user) {
+      logout();
+    }
+  }, 60000); // 60000ms = 1 minute
 
   // Login function to update user state after successful login
   const login = (role) => {
