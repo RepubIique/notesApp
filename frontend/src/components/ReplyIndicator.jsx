@@ -1,4 +1,6 @@
 import React from 'react';
+import { Box, IconButton, Typography } from '@mui/material';
+import { Close as CloseIcon } from '@mui/icons-material';
 import { generateContentPreview, getSenderDisplayName } from '../utils/messageUtils';
 
 /**
@@ -17,99 +19,86 @@ import { generateContentPreview, getSenderDisplayName } from '../utils/messageUt
  * @param {string} [props.currentUserRole] - Current user's role ('A' or 'B'), defaults to 'A'
  */
 function ReplyIndicator({ originalMessage, onCancel, currentUserRole = 'A' }) {
-  const [isHovering, setIsHovering] = React.useState(false);
   const senderName = getSenderDisplayName(originalMessage.sender, currentUserRole);
   const contentPreview = generateContentPreview(originalMessage, 100);
   const previewId = `reply-preview-${originalMessage.id}`;
 
   return (
-    <div style={styles.container} aria-describedby={previewId}>
-      <div style={styles.leftBorder} />
-      <div style={styles.content}>
-        <div style={styles.header}>
-          <span style={styles.senderName}>{senderName}</span>
-        </div>
-        <div id={previewId} style={styles.preview}>{contentPreview}</div>
-      </div>
-      <button
-        style={{
-          ...styles.closeButton,
-          ...(isHovering ? styles.closeButtonHover : {})
+    <Box
+      aria-describedby={previewId}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        backgroundColor: '#f5f5f5',
+        height: '60px',
+        padding: '0.5rem 0.75rem',
+        borderRadius: '8px 8px 0 0',
+        position: 'relative',
+        animation: 'slideInFromBottom 0.3s ease-out'
+      }}
+    >
+      <Box
+        sx={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: '3px',
+          backgroundColor: 'primary.main',
+          borderRadius: '8px 0 0 0'
         }}
+      />
+      <Box
+        sx={{
+          flex: 1,
+          marginLeft: '0.75rem',
+          overflow: 'hidden'
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '0.25rem' }}>
+          <Typography
+            variant="caption"
+            sx={{
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              color: 'primary.main'
+            }}
+          >
+            {senderName}
+          </Typography>
+        </Box>
+        <Typography
+          id={previewId}
+          variant="body2"
+          sx={{
+            fontSize: '0.875rem',
+            color: 'text.secondary',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          {contentPreview}
+        </Typography>
+      </Box>
+      <IconButton
         onClick={onCancel}
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
         aria-label="Cancel reply"
         title="Cancel reply"
+        size="small"
+        sx={{
+          minWidth: '44px',
+          minHeight: '44px',
+          marginLeft: '0.5rem',
+          '&:hover': {
+            backgroundColor: 'rgba(0, 0, 0, 0.05)'
+          }
+        }}
       >
-        ✕
-      </button>
-    </div>
+        <CloseIcon fontSize="small" />
+      </IconButton>
+    </Box>
   );
 }
-
-const styles = {
-  container: {
-    display: 'flex',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    height: '60px',
-    padding: '0.5rem 0.75rem',
-    borderRadius: '8px 8px 0 0',
-    position: 'relative',
-    animation: 'slideInFromBottom 0.3s ease-out'
-  },
-  leftBorder: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: '3px',
-    backgroundColor: '#007bff',
-    borderRadius: '8px 0 0 0'
-  },
-  content: {
-    flex: 1,
-    marginLeft: '0.75rem',
-    overflow: 'hidden'
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    marginBottom: '0.25rem'
-  },
-  senderName: {
-    fontSize: '0.8125rem',
-    fontWeight: '600',
-    color: '#007bff'
-  },
-  preview: {
-    fontSize: '0.875rem',
-    color: '#666',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap'
-  },
-  closeButton: {
-    border: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    fontSize: '1.25rem',
-    color: '#999',
-    padding: '0.5rem',
-    borderRadius: '4px',
-    transition: 'background-color 0.2s, color 0.2s',
-    minWidth: '44px',
-    minHeight: '44px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: '0.5rem'
-  },
-  closeButtonHover: {
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    color: '#666'
-  }
-};
 
 export default ReplyIndicator;

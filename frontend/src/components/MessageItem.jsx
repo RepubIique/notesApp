@@ -322,7 +322,7 @@ const styles = {
     boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
     position: 'relative',
     wordBreak: 'break-word',
-    minWidth: '60px'
+    minWidth: '50px'
   },
   textContent: {
     fontSize: '0.9375rem',

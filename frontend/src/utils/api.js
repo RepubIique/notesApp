@@ -10,14 +10,7 @@ const apiClient = axios.create({
   }
 });
 
-// Add token to all requests
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// No token storage - rely on HttpOnly cookies only
 
 // Auth API functions
 export const authAPI = {
@@ -28,10 +21,7 @@ export const authAPI = {
    */
   login: async (password) => {
     const response = await apiClient.post('/api/auth/login', { password });
-    // Store token in localStorage for cross-origin compatibility
-    if (response.data.token) {
-      localStorage.setItem('auth_token', response.data.token);
-    }
+    // No token storage - cookie only
     return response.data;
   },
 
@@ -41,7 +31,6 @@ export const authAPI = {
    */
   logout: async () => {
     const response = await apiClient.post('/api/auth/logout');
-    localStorage.removeItem('auth_token');
     return response.data;
   },
 

@@ -6,24 +6,9 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Changed to false - no auto-fetch
 
-  // Fetch user role from GET /api/me on mount
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const data = await authAPI.me();
-        setUser({ role: data.role });
-      } catch (error) {
-        // User is not authenticated
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
-  }, []);
+  // Removed auto-fetch on mount - user must login every time
 
   // Logout function
   const logout = async () => {

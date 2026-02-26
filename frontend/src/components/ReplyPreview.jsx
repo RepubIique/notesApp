@@ -1,4 +1,5 @@
 import React from 'react';
+import { Box, Typography } from '@mui/material';
 import { generateContentPreview, getSenderDisplayName } from '../utils/messageUtils';
 
 /**
@@ -19,7 +20,6 @@ import { generateContentPreview, getSenderDisplayName } from '../utils/messageUt
  * @param {boolean} [props.isOwnMessage] - Whether this is the current user's message
  */
 function ReplyPreview({ originalMessage, onClick, currentUserRole = 'A', isOwnMessage = false }) {
-  const [isHovering, setIsHovering] = React.useState(false);
   const senderName = getSenderDisplayName(originalMessage.sender, currentUserRole);
   const contentPreview = generateContentPreview(originalMessage, 100);
 
@@ -40,99 +40,100 @@ function ReplyPreview({ originalMessage, onClick, currentUserRole = 'A', isOwnMe
                              !originalMessage.deleted;
 
   return (
-    <div
-      style={{
-        ...styles.container,
-        ...(isOwnMessage ? styles.containerOwn : styles.containerOther),
-        ...(isHovering ? styles.containerHover : {})
-      }}
+    <Box
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
       role="button"
       tabIndex={0}
       aria-label={`Reply to ${senderName}: ${contentPreview}`}
+      sx={{
+        position: 'relative',
+        borderRadius: '8px',
+        padding: { xs: '6px', sm: '8px' },
+        marginBottom: '8px',
+        cursor: 'pointer',
+        transition: 'background-color 0.2s, opacity 0.2s',
+        minHeight: { xs: '40px', sm: '44px' },
+        display: 'flex',
+        alignItems: 'center',
+        backgroundColor: isOwnMessage ? 'rgba(0, 0, 0, 0.05)' : 'rgba(0, 0, 0, 0.08)',
+        maxWidth: '100%',
+        '&:hover': {
+          opacity: 0.8
+        }
+      }}
     >
-      <div style={styles.leftBorder} />
-      <div style={styles.content}>
-        <div style={styles.senderName}>{senderName}</div>
-        <div style={styles.previewContent}>
+      <Box
+        sx={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: '2px',
+          backgroundColor: 'primary.main',
+          borderRadius: '8px 0 0 8px'
+        }}
+      />
+      <Box
+        sx={{
+          flex: 1,
+          marginLeft: { xs: '8px', sm: '10px' },
+          overflow: 'hidden',
+          minWidth: 0
+        }}
+      >
+        <Typography
+          variant="caption"
+          sx={{
+            fontSize: { xs: '0.7rem', sm: '0.75rem' },
+            fontWeight: 600,
+            color: 'primary.main',
+            marginBottom: '2px',
+            display: 'block'
+          }}
+        >
+          {senderName}
+        </Typography>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'flex-start', 
+          gap: { xs: '6px', sm: '8px' },
+          minWidth: 0
+        }}>
           {showImageThumbnail && (
-            <img
+            <Box
+              component="img"
               src={originalMessage.image_path}
               alt="Original message"
-              style={styles.thumbnail}
+              sx={{
+                width: { xs: '32px', sm: '40px' },
+                height: { xs: '32px', sm: '40px' },
+                objectFit: 'cover',
+                borderRadius: '4px',
+                flexShrink: 0
+              }}
             />
           )}
-          <div style={styles.preview}>{contentPreview}</div>
-        </div>
-      </div>
-    </div>
+          <Typography
+            variant="body2"
+            sx={{
+              fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+              color: 'text.secondary',
+              overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              wordBreak: 'break-word',
+              flex: 1,
+              minWidth: 0
+            }}
+          >
+            {contentPreview}
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
   );
 }
-
-const styles = {
-  container: {
-    position: 'relative',
-    borderRadius: '8px',
-    padding: '8px',
-    marginBottom: '8px',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-    minHeight: '44px',
-    display: 'flex',
-    alignItems: 'center'
-  },
-  containerOwn: {
-    backgroundColor: 'rgba(0, 0, 0, 0.05)'
-  },
-  containerOther: {
-    backgroundColor: 'rgba(0, 0, 0, 0.08)'
-  },
-  containerHover: {
-    opacity: 0.8
-  },
-  leftBorder: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: '2px',
-    backgroundColor: '#007bff',
-    borderRadius: '8px 0 0 8px'
-  },
-  content: {
-    flex: 1,
-    marginLeft: '10px',
-    overflow: 'hidden'
-  },
-  senderName: {
-    fontSize: '0.75rem',
-    fontWeight: '600',
-    color: '#007bff',
-    marginBottom: '4px'
-  },
-  previewContent: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px'
-  },
-  thumbnail: {
-    width: '40px',
-    height: '40px',
-    objectFit: 'cover',
-    borderRadius: '4px',
-    flexShrink: 0
-  },
-  preview: {
-    fontSize: '0.8125rem',
-    color: '#666',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-    flex: 1
-  }
-};
 
 export default ReplyPreview;
