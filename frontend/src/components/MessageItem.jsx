@@ -2,9 +2,32 @@ import React, { useState, useEffect } from 'react';
 import apiClient, { imageAPI } from '../utils/api';
 import TranslateButton from './TranslateButton';
 import TranslationToggle from './TranslationToggle';
+import ReplyPreview from './ReplyPreview';
 import useTranslation from '../hooks/useTranslation';
+import { useAuth } from '../context/AuthContext';
 
-function MessageItem({ message, isOwn, onUnsend, onReact, onImageClick }) {
+/**
+ * MessageItem component displays a single message in the chat.
+ * Handles text, image, and voice messages with support for reactions, translations, and replies.
+ * 
+ * @param {Object} props
+ * @param {Object} props.message - The message object to display
+ * @param {string} props.message.id - Message ID
+ * @param {string} props.message.type - Message type ('text', 'image', 'voice')
+ * @param {string} [props.message.text] - Message text content
+ * @param {boolean} props.message.deleted - Whether the message is deleted
+ * @param {Object} [props.message.reply_to_message] - Original message data if this is a reply
+ * @param {Array} [props.message.reactions] - Array of reaction objects
+ * @param {Array} [props.message.translations] - Array of translation objects
+ * @param {Object} [props.message.translation_preference] - User's translation preference
+ * @param {boolean} props.isOwn - Whether this message belongs to the current user
+ * @param {Function} props.onUnsend - Callback when unsend button is clicked
+ * @param {Function} props.onReact - Callback when reaction is added
+ * @param {Function} props.onImageClick - Callback when image is clicked
+ * @param {Function} props.onReplyClick - Callback when reply preview is clicked
+ */
+function MessageItem({ message, isOwn, onUnsend, onReact, onImageClick, onReplyClick }) {
+  const { user } = useAuth();
   const [showActions, setShowActions] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [imageUrl, setImageUrl] = useState(null);
@@ -128,6 +151,16 @@ function MessageItem({ message, isOwn, onUnsend, onReact, onImageClick }) {
         ...styles.messageContent,
         backgroundColor: isOwn ? '#007bff' : '#fff'
       }}>
+        {/* Reply preview - shown when message is a reply */}
+        {message.reply_to_message && (
+          <ReplyPreview
+            originalMessage={message.reply_to_message}
+            onClick={onReplyClick}
+            currentUserRole={user?.role}
+            isOwnMessage={isOwn}
+          />
+        )}
+        
         {/* Message content */}
         {message.deleted ? (
           <div style={{

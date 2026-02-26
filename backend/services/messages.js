@@ -1,46 +1,56 @@
 import { supabase } from '../config/supabase.js';
 
-// Create a text message
-export const createTextMessage = async (sender, text) => {
+/**
+ * Create a text message with optional reply reference.
+ * 
+ * @param {string} sender - The sender identifier ('A' or 'B')
+ * @param {string} text - The message text content
+ * @param {string|null} [replyToId=null] - Optional ID of the message being replied to
+ * @returns {Promise<Object>} The created message object
+ * @throws {Error} If message creation fails or reply reference is invalid
+ */
+export const createTextMessage = async (sender, text, replyToId = null) => {
   const { data, error } = await supabase
     .from('messages')
     .insert({
       sender,
       type: 'text',
       text,
+      reply_to_id: replyToId,
       created_at: new Date().toISOString()
     })
     .select()
     .single();
 
   if (error) {
+    // Check for foreign key constraint violation (invalid reply_to_id)
+    if (error.code === '23503' || error.message.includes('foreign key')) {
+      const fkError = new Error('Invalid reply reference');
+      fkError.statusCode = 400;
+      throw fkError;
+    }
     throw new Error(`Failed to create text message: ${error.message}`);
   }
 
   return data;
 };
 
+/**
+ * Get messages with reply data, reactions, and translations.
+ * Fetches messages and enriches them with related data including reply_to_message objects.
+ * 
+ * @param {number} [limit=50] - Maximum number of messages to fetch
+ * @param {string} [before] - Fetch messages before this timestamp (for pagination)
+ * @param {string|null} [userRole=null] - Current user's role for translation preferences
+ * @returns {Promise<Array>} Array of message objects with enriched data
+ * @throws {Error} If message fetching fails
+ */
 export const getMessages = async (limit = 50, before, userRole = null) => {
+  // Fetch messages with basic query
   let query = supabase
     .from('messages')
-    .select(`
-      *,
-      reactions (
-        id,
-        message_id,
-        user_role,
-        emoji,
-        created_at
-      ),
-      translations (
-        id,
-        message_id,
-        source_language,
-        target_language,
-        translated_text,
-        created_at
-      )
-    `)
+    .select('*')
+    .eq('deleted', false)
     .order('created_at', { ascending: false })
     .limit(limit);
 
@@ -53,6 +63,83 @@ export const getMessages = async (limit = 50, before, userRole = null) => {
 
   if (error) {
     throw new Error(`Failed to fetch messages: ${error.message}`);
+  }
+
+  // Fetch reply data for messages that have reply_to_id
+  if (data && data.length > 0) {
+    const messageIds = data.map(msg => msg.id);
+    const replyToIds = data
+      .filter(msg => msg.reply_to_id)
+      .map(msg => msg.reply_to_id);
+
+    // Fetch original messages for replies (if any)
+    let replyMessages = [];
+    if (replyToIds.length > 0) {
+      const { data: replyData, error: replyError } = await supabase
+        .from('messages')
+        .select('id, sender, type, text, image_path, audio_path, audio_duration, deleted, created_at')
+        .in('id', replyToIds);
+
+      if (!replyError && replyData) {
+        replyMessages = replyData;
+      }
+    }
+
+    // Create a map of reply messages by id
+    const replyMap = new Map(replyMessages.map(msg => [msg.id, msg]));
+
+    // Attach reply_to_message to each message
+    data.forEach(message => {
+      if (message.reply_to_id) {
+        message.reply_to_message = replyMap.get(message.reply_to_id) || null;
+      } else {
+        message.reply_to_message = null;
+      }
+    });
+
+    // Fetch reactions
+    const { data: reactions, error: reactionsError } = await supabase
+      .from('reactions')
+      .select('*')
+      .in('message_id', messageIds);
+
+    if (!reactionsError && reactions) {
+      // Group reactions by message_id
+      const reactionsMap = new Map();
+      reactions.forEach(reaction => {
+        if (!reactionsMap.has(reaction.message_id)) {
+          reactionsMap.set(reaction.message_id, []);
+        }
+        reactionsMap.get(reaction.message_id).push(reaction);
+      });
+
+      // Attach reactions to messages
+      data.forEach(message => {
+        message.reactions = reactionsMap.get(message.id) || [];
+      });
+    }
+
+    // Fetch translations
+    const { data: translations, error: translationsError } = await supabase
+      .from('translations')
+      .select('*')
+      .in('message_id', messageIds);
+
+    if (!translationsError && translations) {
+      // Group translations by message_id
+      const translationsMap = new Map();
+      translations.forEach(translation => {
+        if (!translationsMap.has(translation.message_id)) {
+          translationsMap.set(translation.message_id, []);
+        }
+        translationsMap.get(translation.message_id).push(translation);
+      });
+
+      // Attach translations to messages
+      data.forEach(message => {
+        message.translations = translationsMap.get(message.id) || [];
+      });
+    }
   }
 
   // If userRole is provided, fetch translation preferences for this user

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import MessageItem from './MessageItem';
 import { imageAPI } from '../utils/api';
+import { AuthProvider } from '../context/AuthContext';
 
 // Mock the imageAPI
 vi.mock('../utils/api', () => ({
@@ -48,6 +49,15 @@ vi.mock('../hooks/useTranslation', () => ({
   }))
 }));
 
+// Helper function to render with AuthProvider
+const renderWithAuth = (component) => {
+  return render(
+    <AuthProvider>
+      {component}
+    </AuthProvider>
+  );
+};
+
 describe('MessageItem', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -65,7 +75,7 @@ describe('MessageItem', () => {
         reactions: []
       };
 
-      render(<MessageItem message={message} isOwn={false} />);
+      renderWithAuth(<MessageItem message={message} isOwn={false} />);
       expect(screen.getByText('Hello, world!')).toBeInTheDocument();
     });
 
@@ -80,7 +90,7 @@ describe('MessageItem', () => {
         reactions: []
       };
 
-      render(<MessageItem message={message} isOwn={false} />);
+      renderWithAuth(<MessageItem message={message} isOwn={false} />);
       // Timestamp should be displayed (format may vary by locale)
       expect(screen.getByText(/\d{1,2}:\d{2}/)).toBeInTheDocument();
     });
@@ -98,7 +108,7 @@ describe('MessageItem', () => {
         reactions: []
       };
 
-      render(<MessageItem message={message} isOwn={false} />);
+      renderWithAuth(<MessageItem message={message} isOwn={false} />);
       expect(screen.getByText('[Message deleted]')).toBeInTheDocument();
       expect(screen.queryByText('Original text')).not.toBeInTheDocument();
     });
@@ -114,7 +124,7 @@ describe('MessageItem', () => {
         reactions: []
       };
 
-      const { container } = render(<MessageItem message={message} isOwn={true} />);
+      const { container } = renderWithAuth(<MessageItem message={message} isOwn={true} />);
       
       // Hover to show actions
       const messageContainer = container.firstChild;
@@ -142,7 +152,7 @@ describe('MessageItem', () => {
 
       imageAPI.getUrl.mockResolvedValue({ url: 'https://example.com/image.jpg' });
 
-      render(<MessageItem message={message} isOwn={false} />);
+      renderWithAuth(<MessageItem message={message} isOwn={false} />);
 
       // Should show loading state initially
       expect(screen.getByText('Loading image...')).toBeInTheDocument();
@@ -173,7 +183,7 @@ describe('MessageItem', () => {
 
       imageAPI.getUrl.mockResolvedValue({ url: 'https://example.com/image.jpg' });
 
-      render(<MessageItem message={message} isOwn={false} onImageClick={onImageClick} />);
+      renderWithAuth(<MessageItem message={message} isOwn={false} onImageClick={onImageClick} />);
 
       // Wait for image to load
       await waitFor(() => {
@@ -204,7 +214,7 @@ describe('MessageItem', () => {
 
       imageAPI.getUrl.mockResolvedValue({ url: 'https://example.com/image.jpg' });
 
-      render(<MessageItem message={message} isOwn={false} />);
+      renderWithAuth(<MessageItem message={message} isOwn={false} />);
 
       // Wait for image to load
       await waitFor(() => {
@@ -229,7 +239,7 @@ describe('MessageItem', () => {
 
       imageAPI.getUrl.mockRejectedValue(new Error('Failed to load'));
 
-      render(<MessageItem message={message} isOwn={false} />);
+      renderWithAuth(<MessageItem message={message} isOwn={false} />);
 
       await waitFor(() => {
         expect(screen.getByText('Failed to load image')).toBeInTheDocument();
@@ -247,7 +257,7 @@ describe('MessageItem', () => {
         reactions: []
       };
 
-      render(<MessageItem message={message} isOwn={false} />);
+      renderWithAuth(<MessageItem message={message} isOwn={false} />);
 
       expect(imageAPI.getUrl).not.toHaveBeenCalled();
       expect(screen.getByText('[Message deleted]')).toBeInTheDocument();
@@ -270,7 +280,7 @@ describe('MessageItem', () => {
         ]
       };
 
-      render(<MessageItem message={message} isOwn={false} />);
+      renderWithAuth(<MessageItem message={message} isOwn={false} />);
 
       // Should show thumbs up with count 2
       expect(screen.getByText(/👍\s+2/)).toBeInTheDocument();
@@ -291,7 +301,7 @@ describe('MessageItem', () => {
         ]
       };
 
-      render(<MessageItem message={message} isOwn={false} />);
+      renderWithAuth(<MessageItem message={message} isOwn={false} />);
 
       expect(screen.getByText('[Message deleted]')).toBeInTheDocument();
       expect(screen.getByText(/👍\s+1/)).toBeInTheDocument();
@@ -308,7 +318,7 @@ describe('MessageItem', () => {
         reactions: []
       };
 
-      const { container } = render(<MessageItem message={message} isOwn={false} />);
+      const { container } = renderWithAuth(<MessageItem message={message} isOwn={false} />);
       
       const messageContainer = container.firstChild;
       
@@ -337,7 +347,7 @@ describe('MessageItem', () => {
         reactions: []
       };
 
-      const { container } = render(<MessageItem message={message} isOwn={false} onReact={onReact} />);
+      const { container } = renderWithAuth(<MessageItem message={message} isOwn={false} onReact={onReact} />);
       
       const messageContainer = container.firstChild;
       
@@ -366,7 +376,7 @@ describe('MessageItem', () => {
         reactions: []
       };
 
-      const { container } = render(<MessageItem message={message} isOwn={true} />);
+      const { container } = renderWithAuth(<MessageItem message={message} isOwn={true} />);
       
       const messageContainer = container.firstChild;
       
@@ -391,7 +401,7 @@ describe('MessageItem', () => {
         reactions: []
       };
 
-      const { container } = render(<MessageItem message={message} isOwn={false} />);
+      const { container } = renderWithAuth(<MessageItem message={message} isOwn={false} />);
       
       const messageContainer = container.firstChild;
       
@@ -414,7 +424,7 @@ describe('MessageItem', () => {
         reactions: []
       };
 
-      const { container } = render(<MessageItem message={message} isOwn={true} onUnsend={onUnsend} />);
+      const { container } = renderWithAuth(<MessageItem message={message} isOwn={true} onUnsend={onUnsend} />);
       
       const messageContainer = container.firstChild;
       
@@ -439,7 +449,7 @@ describe('MessageItem', () => {
         reactions: []
       };
 
-      const { container } = render(<MessageItem message={message} isOwn={true} />);
+      const { container } = renderWithAuth(<MessageItem message={message} isOwn={true} />);
       
       const messageContainer = container.firstChild;
       expect(messageContainer).toHaveStyle({ alignSelf: 'flex-end' });
@@ -456,7 +466,7 @@ describe('MessageItem', () => {
         reactions: []
       };
 
-      const { container } = render(<MessageItem message={message} isOwn={false} />);
+      const { container } = renderWithAuth(<MessageItem message={message} isOwn={false} />);
       
       const messageContainer = container.firstChild;
       expect(messageContainer).toHaveStyle({ alignSelf: 'flex-start' });
@@ -475,7 +485,7 @@ describe('MessageItem', () => {
         reactions: []
       };
 
-      const { container } = render(<MessageItem message={message} isOwn={false} />);
+      const { container } = renderWithAuth(<MessageItem message={message} isOwn={false} />);
       
       const messageContainer = container.firstChild;
       
@@ -499,7 +509,7 @@ describe('MessageItem', () => {
 
       imageAPI.getUrl.mockResolvedValue({ url: 'https://example.com/image.jpg' });
 
-      const { container } = render(<MessageItem message={message} isOwn={false} />);
+      const { container } = renderWithAuth(<MessageItem message={message} isOwn={false} />);
       
       const messageContainer = container.firstChild;
       
@@ -521,7 +531,7 @@ describe('MessageItem', () => {
         reactions: []
       };
 
-      const { container } = render(<MessageItem message={message} isOwn={false} />);
+      const { container } = renderWithAuth(<MessageItem message={message} isOwn={false} />);
       
       const messageContainer = container.firstChild;
       
@@ -552,7 +562,7 @@ describe('MessageItem', () => {
         ]
       };
 
-      render(<MessageItem message={message} isOwn={false} />);
+      renderWithAuth(<MessageItem message={message} isOwn={false} />);
       
       // Translation toggle should be present since translation exists
       expect(screen.getByTestId('translation-toggle')).toBeInTheDocument();
@@ -580,7 +590,7 @@ describe('MessageItem', () => {
         }
       };
 
-      render(<MessageItem message={message} isOwn={false} />);
+      renderWithAuth(<MessageItem message={message} isOwn={false} />);
       
       // Should display translated text since showOriginal is false
       expect(screen.getByText('你好')).toBeInTheDocument();
@@ -605,7 +615,7 @@ describe('MessageItem', () => {
         ]
       };
 
-      render(<MessageItem message={message} isOwn={false} />);
+      renderWithAuth(<MessageItem message={message} isOwn={false} />);
       
       // Should display original text by default
       expect(screen.getByText('Hello')).toBeInTheDocument();
@@ -637,7 +647,7 @@ describe('MessageItem', () => {
         }
       };
 
-      render(<MessageItem message={message} isOwn={false} />);
+      renderWithAuth(<MessageItem message={message} isOwn={false} />);
       
       // Should display original text
       expect(screen.getByText('Hello')).toBeInTheDocument();
@@ -655,7 +665,7 @@ describe('MessageItem', () => {
         reactions: []
       };
 
-      render(<MessageItem message={message} isOwn={false} />);
+      renderWithAuth(<MessageItem message={message} isOwn={false} />);
       
       // Should display original text
       expect(screen.getByText('Hello')).toBeInTheDocument();
@@ -676,7 +686,7 @@ describe('MessageItem', () => {
         translations: []
       };
 
-      render(<MessageItem message={message} isOwn={false} />);
+      renderWithAuth(<MessageItem message={message} isOwn={false} />);
       
       // Should display original text
       expect(screen.getByText('Hello')).toBeInTheDocument();

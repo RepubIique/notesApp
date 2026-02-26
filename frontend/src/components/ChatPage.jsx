@@ -26,6 +26,7 @@ import useIdleTimer from '../hooks/useIdleTimer';
 import MessageList from './MessageList';
 import MessageComposer from './MessageComposer';
 import ImageLightbox from './ImageLightbox';
+import ReplyIndicator from './ReplyIndicator';
 import { messageAPI, imageAPI, voiceMessageAPI } from '../utils/api';
 import { formatLastSeen } from '../utils/dateFormatter';
 
@@ -46,6 +47,11 @@ function ChatPage() {
   const pollingIntervalRef = useRef(null);
   const visibleMessagesRef = useRef(new Set());
   const initialLoadRef = useRef(true);
+  const messageComposerRef = useRef(null);
+  const messageRefs = useRef({});
+  
+  // Reply state
+  const [replyingTo, setReplyingTo] = useState(null);
   
   // Lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -152,12 +158,85 @@ function ChatPage() {
   // Handle message send
   const handleSendText = async (text) => {
     try {
-      await messageAPI.sendText(text);
+      await messageAPI.sendText(text, replyingTo?.id || null);
+      // Clear reply state after successful send
+      setReplyingTo(null);
       // Message will appear in the next poll
     } catch (error) {
       console.error('Failed to send message:', error);
+      // Handle 400 error for invalid reply reference
+      if (error.response?.status === 400 && error.response?.data?.error?.includes('Invalid reply reference')) {
+        alert('The message you are replying to no longer exists.');
+        setReplyingTo(null);
+      }
       throw error;
     }
+  };
+
+  /**
+   * Handle reply initiation when user swipes or clicks reply on a message.
+   * Sets the reply state and focuses the message input field.
+   * 
+   * @param {Object} message - The message being replied to
+   */
+  const handleReply = (message) => {
+    setReplyingTo(message);
+    // Focus the message input field
+    if (messageComposerRef.current) {
+      messageComposerRef.current.focus();
+    }
+  };
+
+  /**
+   * Handle reply cancellation when user clicks the close button on ReplyIndicator.
+   * Clears the reply state.
+   */
+  const handleCancelReply = () => {
+    setReplyingTo(null);
+  };
+  // Handle Escape key to cancel reply
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && replyingTo) {
+        handleCancelReply();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [replyingTo]);
+
+  /**
+   * Handle reply preview click - navigate to original message.
+   * Scrolls to the original message and applies a highlight animation.
+   * Shows an alert if the message is not currently loaded.
+   * 
+   * @param {string} messageId - The ID of the original message to navigate to
+   */
+  const handleReplyClick = (messageId) => {
+    const messageElement = messageRefs.current[messageId];
+    
+    if (!messageElement) {
+      // Message not loaded - show notification
+      alert('Message not currently loaded');
+      return;
+    }
+    
+    // Scroll to message
+    messageElement.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    });
+    
+    // Apply highlight animation
+    messageElement.classList.add('highlight-animation');
+    
+    // Remove animation after 2 seconds
+    setTimeout(() => {
+      messageElement.classList.remove('highlight-animation');
+    }, 2000);
   };
 
   // Handle image upload
@@ -477,8 +556,20 @@ function ChatPage() {
           onLoadMore={handleLoadMore}
           hasMoreMessages={hasMoreMessages}
           isLoadingMore={isLoadingMore}
+          onReply={handleReply}
+          onReplyClick={handleReplyClick}
+          messageRefs={messageRefs}
         />
+        {/* Reply Indicator - shown when replying to a message */}
+        {replyingTo && (
+          <ReplyIndicator
+            originalMessage={replyingTo}
+            onCancel={handleCancelReply}
+            currentUserRole={currentUser}
+          />
+        )}
         <MessageComposer
+          ref={messageComposerRef}
           onSendText={handleSendText}
           onSendImage={handleSendImage}
         />

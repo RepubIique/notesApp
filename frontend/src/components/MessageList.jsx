@@ -1,8 +1,27 @@
 import React, { useRef, useEffect, useState } from 'react';
 import MessageItem from './MessageItem';
+import SwipeableMessageItem from './SwipeableMessageItem';
 import VoiceMessage from './VoiceMessage';
 
-function MessageList({ messages, currentUser, onUnsend, onReact, onLoadMore, onMessageVisible, onImageClick, hasMoreMessages, isLoadingMore }) {
+/**
+ * MessageList component displays a scrollable list of messages with swipe gestures.
+ * Handles infinite scrolling, auto-scroll to bottom, and message visibility tracking.
+ * 
+ * @param {Object} props
+ * @param {Array} props.messages - Array of message objects to display
+ * @param {string} props.currentUser - Current user's role ('A' or 'B')
+ * @param {Function} props.onUnsend - Callback when message is unsent
+ * @param {Function} props.onReact - Callback when reaction is added
+ * @param {Function} props.onLoadMore - Callback to load more messages
+ * @param {Function} props.onMessageVisible - Callback when message becomes visible
+ * @param {Function} props.onImageClick - Callback when image is clicked
+ * @param {Function} props.onReplyClick - Callback when reply preview is clicked
+ * @param {Function} props.onReply - Callback when reply is initiated via swipe
+ * @param {boolean} props.hasMoreMessages - Whether more messages are available to load
+ * @param {boolean} props.isLoadingMore - Whether messages are currently being loaded
+ * @param {Object} props.messageRefs - Ref object to store message element references
+ */
+function MessageList({ messages, currentUser, onUnsend, onReact, onLoadMore, onMessageVisible, onImageClick, onReplyClick, onReply, hasMoreMessages, isLoadingMore, messageRefs }) {
   const listRef = useRef(null);
   const [prevMessageCount, setPrevMessageCount] = useState(0);
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -105,7 +124,15 @@ function MessageList({ messages, currentUser, onUnsend, onReact, onLoadMore, onM
         <>
           {/* Display messages in newest-first order (reverse chronological) */}
           {messages.map((message) => (
-            <div key={message.id} data-message-id={message.id}>
+            <div 
+              key={message.id} 
+              data-message-id={message.id}
+              ref={(el) => {
+                if (el && messageRefs) {
+                  messageRefs.current[message.id] = el;
+                }
+              }}
+            >
               {message.type === 'voice' ? (
                 <VoiceMessage
                   message={message}
@@ -114,12 +141,14 @@ function MessageList({ messages, currentUser, onUnsend, onReact, onLoadMore, onM
                   onReact={onReact}
                 />
               ) : (
-                <MessageItem
+                <SwipeableMessageItem
                   message={message}
                   isOwn={message.sender === currentUser}
                   onUnsend={onUnsend}
                   onReact={onReact}
                   onImageClick={onImageClick}
+                  onReply={onReply}
+                  onReplyClick={onReplyClick}
                 />
               )}
             </div>

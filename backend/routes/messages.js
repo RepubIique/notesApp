@@ -37,23 +37,37 @@ router.get('/', authMiddleware, async (req, res) => {
 // POST /api/messages - Create a new text message
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const { text } = req.body;
+    const { text, reply_to_id } = req.body;
 
     // Validate text is non-empty
     if (!text || text.trim().length === 0) {
       return res.status(400).json({ error: 'Message text cannot be empty' });
     }
 
+    // Validate reply_to_id is valid UUID format (if provided)
+    if (reply_to_id !== undefined && reply_to_id !== null) {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(reply_to_id)) {
+        return res.status(400).json({ error: 'Invalid reply_to_id format' });
+      }
+    }
+
     // Get sender from req.user
     const sender = req.user.role;
 
-    // Call createTextMessage function
-    const message = await createTextMessage(sender, text);
+    // Call createTextMessage function with optional reply_to_id
+    const message = await createTextMessage(sender, text, reply_to_id || null);
 
     // Return created message
     res.status(201).json({ message });
   } catch (error) {
     console.error('Error creating message:', error);
+    
+    // Handle 400 Bad Request for invalid reply reference
+    if (error.statusCode === 400) {
+      return res.status(400).json({ error: error.message });
+    }
+    
     res.status(500).json({ error: 'Failed to create message' });
   }
 });

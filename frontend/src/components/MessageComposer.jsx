@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
   Box,
   TextField,
@@ -25,7 +25,7 @@ import { useUpload } from '../context/UploadContext';
 import { useVoiceRecording } from '../context/VoiceRecordingContext';
 import { uploadManager } from '../utils/uploadManager';
 
-function MessageComposer({ onSendText, onSendImage, conversationId = 'default' }) {
+const MessageComposer = forwardRef(({ onSendText, onSendImage, conversationId = 'default' }, ref) => {
   const [text, setText] = useState('');
   const [uploading, setUploading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -34,6 +34,16 @@ function MessageComposer({ onSendText, onSendImage, conversationId = 'default' }
   const typingTimeoutRef = useRef(null);
   const isTypingRef = useRef(false);
   const compressionWorkerRef = useRef(null);
+  const inputRef = useRef(null);
+
+  // Expose focus method to parent component
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }
+  }));
   
   // Use upload context for managing selected files
   const { 
@@ -510,6 +520,7 @@ function MessageComposer({ onSendText, onSendImage, conversationId = 'default' }
           disabled={uploading || isRecording || isVoiceUploading}
           variant="outlined"
           size="small"
+          inputRef={inputRef}
         />
 
         {/* Send button */}
@@ -533,6 +544,8 @@ function MessageComposer({ onSendText, onSendImage, conversationId = 'default' }
       />
     </>
   );
-}
+});
+
+MessageComposer.displayName = 'MessageComposer';
 
 export default MessageComposer;

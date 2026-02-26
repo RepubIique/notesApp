@@ -13,6 +13,8 @@ This directory contains SQL migration files for setting up the Supabase database
 7. **007_add_voice_message_support.sql** - Adds voice message support to messages table
 8. **008_create_voice_messages_bucket.md** - Instructions for creating the voice-messages storage bucket
 9. **009_create_translations_table.sql** - Creates the translations table for message translation caching
+10. **010_create_translation_preferences_table.sql** - Creates the translation_preferences table for user translation settings
+11. **011_add_message_reply_support.sql** - Adds reply support to messages table
 
 ## Running Migrations
 
@@ -21,7 +23,7 @@ This directory contains SQL migration files for setting up the Supabase database
 1. Log in to your Supabase project dashboard
 2. Navigate to **SQL Editor** in the left sidebar
 3. Click **New query**
-4. Copy and paste the contents of each migration file in order (001, 002, 003, 005, 006, 007, 009)
+4. Copy and paste the contents of each migration file in order (001, 002, 003, 005, 006, 007, 009, 010, 011)
 5. Click **Run** for each migration
 6. Follow the instructions in `004_create_storage_bucket.md` and `008_create_voice_messages_bucket.md` to set up the storage buckets
 
@@ -63,7 +65,7 @@ After running all migrations, verify the schema:
 SELECT table_name 
 FROM information_schema.tables 
 WHERE table_schema = 'public' 
-AND table_name IN ('messages', 'reactions', 'push_subscriptions', 'workouts', 'translations');
+AND table_name IN ('messages', 'reactions', 'push_subscriptions', 'workouts', 'translations', 'translation_preferences');
 
 -- Check messages table structure
 \d messages
@@ -80,11 +82,14 @@ AND table_name IN ('messages', 'reactions', 'push_subscriptions', 'workouts', 't
 -- Check translations table structure
 \d translations
 
+-- Check translation_preferences table structure
+\d translation_preferences
+
 -- Verify indexes
 SELECT indexname, tablename 
 FROM pg_indexes 
 WHERE schemaname = 'public' 
-AND tablename IN ('messages', 'reactions', 'push_subscriptions', 'workouts', 'translations');
+AND tablename IN ('messages', 'reactions', 'push_subscriptions', 'workouts', 'translations', 'translation_preferences');
 
 -- Verify RLS policies on workouts table
 SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual, with_check
@@ -98,11 +103,13 @@ SELECT * FROM storage.buckets WHERE id = 'images';
 ## Schema Overview
 
 ### messages Table
-- Stores all text and image messages
+- Stores all text, image, and voice messages
 - Enforces sender constraint ('A' or 'B')
-- Enforces type constraint ('text' or 'image')
+- Enforces type constraint ('text', 'image', or 'voice')
 - Supports soft deletion via `deleted` flag
+- Supports message replies via `reply_to_id` foreign key
 - Indexed on `created_at` for efficient retrieval
+- Indexed on `reply_to_id` for efficient JOIN operations
 
 ### reactions Table
 - Stores emoji reactions to messages
@@ -131,6 +138,13 @@ SELECT * FROM storage.buckets WHERE id = 'images';
 - Indexed on `message_id` for efficient lookups
 - Indexed on language pair for translation queries
 - Supports English, Chinese (simplified), and Chinese (traditional)
+
+### translation_preferences Table
+- Stores user translation preferences for automatic translation
+- Enforces owner constraint ('A' or 'B')
+- Enforces language constraints (English, Chinese simplified, Chinese traditional)
+- Unique constraint on owner prevents duplicate preferences
+- Indexed on `owner` for efficient lookups
 
 ### images Storage Bucket
 - Private bucket for image uploads

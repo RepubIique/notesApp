@@ -132,6 +132,17 @@ a[style*="position: fixed"]:hover {
   }
 }
 
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes pulse {
   0%, 100% {
     opacity: 1;
@@ -150,4 +161,18 @@ a[style*="position: fixed"]:hover {
 
 .voice-player-transition {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Reply message highlight animation */
+@keyframes highlight {
+  0% {
+    background-color: rgba(33, 150, 243, 0.3);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.highlight-animation {
+  animation: highlight 2s ease-out;
 }

@@ -77,10 +77,11 @@ export const messageAPI = {
   /**
    * Send a text message
    * @param {string} text - The message text
+   * @param {string|null} reply_to_id - Optional ID of the message being replied to
    * @returns {Promise<{message: Object}>} The created message
    */
-  sendText: async (text) => {
-    const response = await apiClient.post('/api/messages', { text });
+  sendText: async (text, reply_to_id = null) => {
+    const response = await apiClient.post('/api/messages', { text, reply_to_id });
     return response.data;
   },
 

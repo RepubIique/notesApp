@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import MessageItem from './MessageItem';
+import { AuthProvider } from '../context/AuthContext';
 
 // Mock the API client
 vi.mock('../utils/api', () => ({
@@ -21,6 +22,15 @@ vi.mock('../hooks/useTranslation', () => ({
 }));
 
 import useTranslation from '../hooks/useTranslation';
+
+// Helper function to render with AuthProvider
+const renderWithAuth = (component) => {
+  return render(
+    <AuthProvider>
+      {component}
+    </AuthProvider>
+  );
+};
 
 describe('MessageItem - Non-Blocking UI During Translation', () => {
   const mockMessage = {
@@ -58,7 +68,7 @@ describe('MessageItem - Non-Blocking UI During Translation', () => {
         loading: true
       });
 
-      render(
+      renderWithAuth(
         <div>
           <MessageItem 
             message={mockMessage} 
@@ -94,7 +104,7 @@ describe('MessageItem - Non-Blocking UI During Translation', () => {
         loading: true
       });
 
-      const { container } = render(
+      const { container } = renderWithAuth(
         <div>
           <MessageItem 
             message={mockMessage} 
@@ -129,7 +139,7 @@ describe('MessageItem - Non-Blocking UI During Translation', () => {
         loading: true
       });
 
-      const { container } = render(
+      const { container } = renderWithAuth(
         <div 
           style={{ height: '200px', overflow: 'auto' }}
           data-testid="scrollable-container"
@@ -168,7 +178,7 @@ describe('MessageItem - Non-Blocking UI During Translation', () => {
         loading: true
       });
 
-      const { rerender } = render(
+      const { rerender } = renderWithAuth(
         <MessageItem 
           message={mockMessage} 
           isOwn={false}
@@ -176,7 +186,7 @@ describe('MessageItem - Non-Blocking UI During Translation', () => {
       );
 
       // Add a new message
-      rerender(
+      rerenderWithAuth(
         <div>
           <MessageItem 
             message={mockMessage} 
@@ -205,7 +215,7 @@ describe('MessageItem - Non-Blocking UI During Translation', () => {
       });
 
       const onUnsend = vi.fn();
-      const { container } = render(
+      const { container } = renderWithAuth(
         <MessageItem 
           message={{
             ...mockMessage,
@@ -249,7 +259,7 @@ describe('MessageItem - Non-Blocking UI During Translation', () => {
         );
       };
 
-      render(<TestWrapper />);
+      renderWithAuth(<TestWrapper />);
 
       // Message should be visible
       expect(screen.getByText('Hello world')).toBeInTheDocument();
@@ -267,7 +277,7 @@ describe('MessageItem - Non-Blocking UI During Translation', () => {
         loading: true
       });
 
-      render(
+      renderWithAuth(
         <MessageItem 
           message={mockMessage} 
           isOwn={false}
@@ -289,7 +299,7 @@ describe('MessageItem - Non-Blocking UI During Translation', () => {
         loading: true
       });
 
-      render(
+      renderWithAuth(
         <MessageItem 
           message={mockMessage} 
           isOwn={false}
@@ -314,7 +324,7 @@ describe('MessageItem - Non-Blocking UI During Translation', () => {
       });
 
       const onReact = vi.fn();
-      const { container } = render(
+      const { container } = renderWithAuth(
         <MessageItem 
           message={mockMessage} 
           isOwn={false}
@@ -352,7 +362,7 @@ describe('MessageItem - Non-Blocking UI During Translation', () => {
         };
       });
 
-      const { container } = render(
+      const { container } = renderWithAuth(
         <div>
           <MessageItem 
             message={mockMessage} 
@@ -395,7 +405,7 @@ describe('MessageItem - Non-Blocking UI During Translation', () => {
         loading: true
       });
 
-      const { container } = render(
+      const { container } = renderWithAuth(
         <MessageItem 
           message={mockMessage} 
           isOwn={false}
@@ -416,7 +426,7 @@ describe('MessageItem - Non-Blocking UI During Translation', () => {
         loading: true
       });
 
-      const { container } = render(
+      const { container } = renderWithAuth(
         <MessageItem 
           message={mockMessage} 
           isOwn={false}
@@ -440,7 +450,7 @@ describe('MessageItem - Non-Blocking UI During Translation', () => {
         loading: true
       });
 
-      const { container } = render(
+      const { container } = renderWithAuth(
         <MessageItem 
           message={mockMessage} 
           isOwn={false}
@@ -457,7 +467,7 @@ describe('MessageItem - Non-Blocking UI During Translation', () => {
 
   describe('Translation State Transitions', () => {
     it('should smoothly transition from loading to success without blocking', async () => {
-      const { rerender } = render(
+      const { rerender } = renderWithAuth(
         <MessageItem 
           message={mockMessage} 
           isOwn={false}
@@ -470,7 +480,7 @@ describe('MessageItem - Non-Blocking UI During Translation', () => {
         loading: true
       });
 
-      rerender(
+      rerenderWithAuth(
         <MessageItem 
           message={mockMessage} 
           isOwn={false}
@@ -491,7 +501,7 @@ describe('MessageItem - Non-Blocking UI During Translation', () => {
         }
       });
 
-      rerender(
+      rerenderWithAuth(
         <MessageItem 
           message={mockMessage} 
           isOwn={false}
@@ -503,7 +513,7 @@ describe('MessageItem - Non-Blocking UI During Translation', () => {
     });
 
     it('should smoothly transition from loading to error without blocking', async () => {
-      const { rerender } = render(
+      const { rerender } = renderWithAuth(
         <MessageItem 
           message={mockMessage} 
           isOwn={false}
@@ -516,7 +526,7 @@ describe('MessageItem - Non-Blocking UI During Translation', () => {
         loading: true
       });
 
-      rerender(
+      rerenderWithAuth(
         <MessageItem 
           message={mockMessage} 
           isOwn={false}
@@ -533,7 +543,7 @@ describe('MessageItem - Non-Blocking UI During Translation', () => {
         }
       });
 
-      rerender(
+      rerenderWithAuth(
         <MessageItem 
           message={mockMessage} 
           isOwn={false}

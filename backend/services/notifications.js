@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase.js';
+import { generateContentPreview, getSenderDisplayName } from '../utils/messageUtils.js';
 
 /**
  * Check if unread messages exist for a specific identity
@@ -34,4 +35,56 @@ export const checkUnreadMessagesForRecipient = async (recipient) => {
 
   // Return true if any unread messages exist
   return !!(data && data.length > 0);
+};
+
+/**
+ * Format a notification body for a message, including reply context if applicable.
+ * 
+ * @param {Object} message - The message object
+ * @param {string} message.sender - The sender identifier ('A' or 'B')
+ * @param {string|null} message.reply_to_id - The ID of the message being replied to (if any)
+ * @param {Object|null} message.reply_to_message - The original message data (if reply)
+ * @returns {Promise<string>} The formatted notification body
+ */
+export const formatNotificationBody = async (message) => {
+  const senderName = getSenderDisplayName(message.sender);
+  
+  // If this is a reply message, include reply context
+  if (message.reply_to_id && message.reply_to_message) {
+    const originalMessage = message.reply_to_message;
+    // generateContentPreview already handles truncation at maxLength
+    const preview = generateContentPreview(originalMessage, 50);
+    
+    return `${senderName} replied to: ${preview}`;
+  }
+  
+  // If this is not a reply, format as standard notification
+  // generateContentPreview already handles truncation at maxLength
+  const preview = generateContentPreview(message, 50);
+  
+  return `${senderName}: ${preview}`;
+};
+
+/**
+ * Create a notification payload for a message.
+ * This function prepares the notification data that would be sent via push notification service.
+ * 
+ * @param {Object} message - The message object with reply_to_message populated if applicable
+ * @param {string} recipient - The recipient identity ('A' or 'B')
+ * @returns {Promise<Object>} The notification payload
+ */
+export const createNotificationPayload = async (message, recipient) => {
+  const body = await formatNotificationBody(message);
+  
+  return {
+    title: 'New Message',
+    body,
+    data: {
+      messageId: message.id,
+      sender: message.sender,
+      recipient,
+      isReply: !!message.reply_to_id,
+      replyToId: message.reply_to_id || null
+    }
+  };
 };
