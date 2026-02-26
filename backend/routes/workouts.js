@@ -5,7 +5,7 @@ const router = express.Router();
 
 // Validation middleware for workout data
 const validateWorkout = (req, res, next) => {
-  const { exercise_name, sets, reps, weight } = req.body;
+  const { exercise_name, sets, reps, weight, per_set_weights, difficulty_rating } = req.body;
   const errors = {};
 
   // Validate exercise_name (required, non-empty string)
@@ -33,13 +33,56 @@ const validateWorkout = (req, res, next) => {
     }
   }
 
-  // Validate weight (required, non-negative number)
-  if (weight === undefined || weight === null) {
-    errors.weight = 'Weight must be a non-negative number';
-  } else {
-    const weightNum = Number(weight);
-    if (isNaN(weightNum) || weightNum < 0) {
+  // Validate per_set_weights if provided
+  if (per_set_weights !== undefined && per_set_weights !== null) {
+    if (!Array.isArray(per_set_weights)) {
+      errors.per_set_weights = 'Per-set weights must be an array';
+    } else {
+      const setsNum = Number(sets);
+      if (!isNaN(setsNum) && per_set_weights.length !== setsNum) {
+        errors.per_set_weights = `Per-set weights array length (${per_set_weights.length}) must match number of sets (${setsNum})`;
+      }
+      
+      // Validate each weight value
+      for (let i = 0; i < per_set_weights.length; i++) {
+        const w = Number(per_set_weights[i]);
+        if (isNaN(w) || w < 0) {
+          errors.per_set_weights = `All per-set weights must be non-negative numbers (invalid value at index ${i})`;
+          break;
+        }
+      }
+    }
+  }
+  
+  // Validate legacy weight field
+  // Note: Both weight and per_set_weights can be provided (hybrid submission)
+  // When both are provided, per_set_weights takes precedence in the POST handler
+  if (per_set_weights !== undefined && per_set_weights !== null) {
+    // If per_set_weights is provided, weight is optional
+    // But if weight is provided, validate it
+    if (weight !== undefined && weight !== null) {
+      const weightNum = Number(weight);
+      if (isNaN(weightNum) || weightNum < 0) {
+        errors.weight = 'Weight must be a non-negative number';
+      }
+    }
+  } else if (per_set_weights === undefined || per_set_weights === null) {
+    // If per_set_weights is not provided, weight is required
+    if (weight === undefined || weight === null) {
       errors.weight = 'Weight must be a non-negative number';
+    } else {
+      const weightNum = Number(weight);
+      if (isNaN(weightNum) || weightNum < 0) {
+        errors.weight = 'Weight must be a non-negative number';
+      }
+    }
+  }
+
+  // Validate difficulty_rating if provided
+  if (difficulty_rating !== undefined && difficulty_rating !== null) {
+    const ratingNum = Number(difficulty_rating);
+    if (isNaN(ratingNum) || !Number.isInteger(ratingNum) || ratingNum < 1 || ratingNum > 10) {
+      errors.difficulty_rating = 'Difficulty rating must be an integer between 1 and 10';
     }
   }
 
@@ -57,18 +100,35 @@ const validateWorkout = (req, res, next) => {
 // POST /api/workouts - Create a new workout entry
 router.post('/', validateWorkout, async (req, res) => {
   try {
-    const { exercise_name, sets, reps, weight, notes } = req.body;
+    const { exercise_name, sets, reps, weight, per_set_weights, difficulty_rating, notes } = req.body;
+
+    // Prepare workout data
+    const workoutData = {
+      exercise_name: exercise_name.trim(),
+      sets: Number(sets),
+      reps: Number(reps),
+      notes: notes || ''
+    };
+
+    // Handle per-set weights or legacy weight
+    if (per_set_weights && Array.isArray(per_set_weights)) {
+      workoutData.per_set_weights = per_set_weights.map(w => Number(w));
+      // Set legacy weight to first per-set weight for backward compatibility
+      workoutData.weight = Number(per_set_weights[0]);
+    } else {
+      workoutData.weight = Number(weight);
+      workoutData.per_set_weights = null;
+    }
+
+    // Add difficulty rating if provided
+    if (difficulty_rating !== undefined && difficulty_rating !== null) {
+      workoutData.difficulty_rating = Number(difficulty_rating);
+    }
 
     // Insert workout into database
     const { data, error } = await supabase
       .from('workouts')
-      .insert({
-        exercise_name: exercise_name.trim(),
-        sets: Number(sets),
-        reps: Number(reps),
-        weight: Number(weight),
-        notes: notes || ''
-      })
+      .insert(workoutData)
       .select()
       .single();
 

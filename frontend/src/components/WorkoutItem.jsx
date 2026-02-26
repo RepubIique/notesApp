@@ -43,6 +43,20 @@ function WorkoutItem({ workout, onDelete }) {
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
   };
+
+  // Helper function to check if workout has per-set weights
+  const hasPerSetWeights = () => {
+    return workout.per_set_weights && Array.isArray(workout.per_set_weights);
+  };
+
+  // Helper function to get difficulty color and label
+  const getDifficultyInfo = (rating) => {
+    if (rating >= 9) return { color: 'error', label: 'Very Hard' };
+    if (rating >= 7) return { color: 'warning', label: 'Hard' };
+    if (rating >= 4) return { color: 'info', label: 'Moderate' };
+    return { color: 'success', label: 'Easy' };
+  };
+
   // Format timestamp in readable format
   const formatDate = (timestamp) => {
     const date = new Date(timestamp);
@@ -105,8 +119,21 @@ function WorkoutItem({ workout, onDelete }) {
             </Box>
           </Box>
         
+        {/* Difficulty rating - prominently displayed */}
+        {workout.difficulty_rating && (
+          <Box sx={{ mb: 1.5 }}>
+            <Chip
+              label={`RPE ${workout.difficulty_rating} - ${getDifficultyInfo(workout.difficulty_rating).label}`}
+              size="medium"
+              color={getDifficultyInfo(workout.difficulty_rating).color}
+              variant="filled"
+              sx={{ fontWeight: 600 }}
+            />
+          </Box>
+        )}
+
         {/* Stats chips */}
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: workout.notes ? 2 : 0 }}>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: hasPerSetWeights() ? 1.5 : (workout.notes ? 2 : 0) }}>
           <Chip 
             icon={<FitnessCenterIcon />}
             label={`${workout.sets} sets`}
@@ -121,14 +148,51 @@ function WorkoutItem({ workout, onDelete }) {
             color="success"
             variant="outlined"
           />
-          <Chip 
-            icon={<ScaleIcon />}
-            label={`${workout.weight} kgs`}
-            size="small"
-            color="warning"
-            variant="outlined"
-          />
+          {!hasPerSetWeights() && (
+            <Chip 
+              icon={<ScaleIcon />}
+              label={`${workout.weight} kg`}
+              size="small"
+              color="warning"
+              variant="outlined"
+            />
+          )}
         </Box>
+
+        {/* Per-set weights display */}
+        {hasPerSetWeights() && (
+          <Box sx={{ mb: workout.notes ? 2 : 0 }}>
+            <Typography 
+              variant="caption" 
+              color="text.secondary" 
+              sx={{ 
+                display: 'block', 
+                mb: 0.75,
+                fontWeight: 500,
+                textTransform: 'uppercase',
+                letterSpacing: 0.5
+              }}
+            >
+              Weight per Set
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+              {workout.per_set_weights.map((weight, index) => (
+                <Chip
+                  key={index}
+                  icon={<ScaleIcon />}
+                  label={`Set ${index + 1}: ${weight}kg`}
+                  size="small"
+                  variant="outlined"
+                  color="warning"
+                  sx={{ 
+                    minWidth: { xs: 'calc(50% - 6px)', sm: 'auto' },
+                    justifyContent: 'flex-start'
+                  }}
+                />
+              ))}
+            </Box>
+          </Box>
+        )}
 
         {/* Notes */}
         {workout.notes && (

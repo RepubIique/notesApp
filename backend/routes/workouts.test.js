@@ -59,6 +59,16 @@ describe('Workout Routes - Implementation Verification', () => {
     assert.ok(routeContent.includes('Weight must be a non-negative number'), 'Should have appropriate error message');
   });
 
+  test('Validation checks difficulty_rating is an integer between 1 and 10', async () => {
+    if (!routeContent) routeContent = await fs.readFile('./routes/workouts.js', 'utf-8');
+    
+    // Verify difficulty_rating validation
+    assert.ok(routeContent.includes('difficulty_rating'), 'Should validate difficulty_rating');
+    assert.ok(routeContent.includes('Number.isInteger'), 'Should check if difficulty_rating is an integer');
+    assert.ok(routeContent.includes('ratingNum < 1 || ratingNum > 10'), 'Should check if rating is between 1 and 10');
+    assert.ok(routeContent.includes('Difficulty rating must be an integer between 1 and 10'), 'Should have appropriate error message');
+  });
+
   test('Validation returns 400 with error details on failure', async () => {
     if (!routeContent) routeContent = await fs.readFile('./routes/workouts.js', 'utf-8');
     
@@ -133,5 +143,70 @@ describe('Workout Routes - Implementation Verification', () => {
     
     // Verify export
     assert.ok(routeContent.includes('export default router'), 'Should export router as default');
+  });
+
+  test('Validation makes weight optional when per_set_weights is provided', async () => {
+    if (!routeContent) routeContent = await fs.readFile('./routes/workouts.js', 'utf-8');
+    
+    // Verify that when per_set_weights is provided, weight validation is conditional
+    const hasConditionalWeightValidation = routeContent.includes('if (per_set_weights !== undefined && per_set_weights !== null)');
+    assert.ok(hasConditionalWeightValidation, 'Should conditionally validate weight based on per_set_weights presence');
+    
+    // Verify weight can be validated independently when provided
+    const hasWeightValidation = routeContent.includes('if (weight !== undefined && weight !== null)');
+    assert.ok(hasWeightValidation, 'Should validate weight when provided');
+    
+    // Verify weight is required only when per_set_weights is not provided
+    const requiresWeightWhenNoPerSetWeights = 
+      routeContent.includes('else if (per_set_weights === undefined || per_set_weights === null)');
+    assert.ok(requiresWeightWhenNoPerSetWeights, 'Should require weight only when per_set_weights is not provided');
+  });
+
+  test('Validation requires weight when per_set_weights is not provided', async () => {
+    if (!routeContent) routeContent = await fs.readFile('./routes/workouts.js', 'utf-8');
+    
+    // Verify weight is required when per_set_weights is not provided
+    const requiresWeightWhenNoPerSetWeights = 
+      routeContent.includes('else if (per_set_weights === undefined || per_set_weights === null)') &&
+      routeContent.includes("errors.weight = 'Weight must be a non-negative number'");
+    
+    assert.ok(requiresWeightWhenNoPerSetWeights, 'Should require weight field when per_set_weights is not provided');
+  });
+
+  test('Validation accepts both weight and per_set_weights (hybrid submission)', async () => {
+    if (!routeContent) routeContent = await fs.readFile('./routes/workouts.js', 'utf-8');
+    
+    // Verify that both fields can be validated independently
+    // The validation should not be mutually exclusive
+    const hasIndependentValidation = 
+      routeContent.includes('if (weight !== undefined && weight !== null)') &&
+      routeContent.includes('if (per_set_weights !== undefined && per_set_weights !== null)');
+    
+    assert.ok(hasIndependentValidation, 'Should validate both weight and per_set_weights independently, allowing hybrid submissions');
+  });
+
+  test('Validation checks per_set_weights is an array', async () => {
+    if (!routeContent) routeContent = await fs.readFile('./routes/workouts.js', 'utf-8');
+    
+    // Verify per_set_weights array validation
+    assert.ok(routeContent.includes('Array.isArray(per_set_weights)'), 'Should check if per_set_weights is an array');
+    assert.ok(routeContent.includes('Per-set weights must be an array'), 'Should have appropriate error message');
+  });
+
+  test('Validation checks per_set_weights length matches sets count', async () => {
+    if (!routeContent) routeContent = await fs.readFile('./routes/workouts.js', 'utf-8');
+    
+    // Verify array length validation
+    assert.ok(routeContent.includes('per_set_weights.length !== setsNum'), 'Should check array length matches sets');
+    assert.ok(routeContent.includes('must match number of sets'), 'Should have appropriate error message');
+  });
+
+  test('Validation checks all per_set_weights are non-negative numbers', async () => {
+    if (!routeContent) routeContent = await fs.readFile('./routes/workouts.js', 'utf-8');
+    
+    // Verify individual weight validation
+    assert.ok(routeContent.includes('for (let i = 0; i < per_set_weights.length; i++)'), 'Should iterate through per_set_weights');
+    assert.ok(routeContent.includes('isNaN(w) || w < 0'), 'Should check each weight is non-negative');
+    assert.ok(routeContent.includes('All per-set weights must be non-negative numbers'), 'Should have appropriate error message');
   });
 });

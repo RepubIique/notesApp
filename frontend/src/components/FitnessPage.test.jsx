@@ -234,14 +234,25 @@ describe('FitnessPage', () => {
       const exerciseInput = screen.getByLabelText(/exercise/i);
       const setsInput = screen.getByLabelText(/sets/i);
       const repsInput = screen.getByLabelText(/reps/i);
-      const weightInput = screen.getByLabelText(/weight/i);
       const submitButton = screen.getByRole('button', { name: /log workout/i });
 
       // Use fireEvent to change input values
       fireEvent.change(exerciseInput, { target: { value: 'Push-ups' } });
       fireEvent.change(setsInput, { target: { value: '3' } });
       fireEvent.change(repsInput, { target: { value: '15' } });
-      fireEvent.change(weightInput, { target: { value: '0' } });
+      
+      // Wait for per-set weight inputs to appear
+      await waitFor(() => {
+        expect(screen.getByLabelText(/set 1/i)).toBeInTheDocument();
+      });
+      
+      // Fill in per-set weights
+      const set1Input = screen.getByLabelText(/set 1/i);
+      const set2Input = screen.getByLabelText(/set 2/i);
+      const set3Input = screen.getByLabelText(/set 3/i);
+      fireEvent.change(set1Input, { target: { value: '0' } });
+      fireEvent.change(set2Input, { target: { value: '0' } });
+      fireEvent.change(set3Input, { target: { value: '0' } });
       
       // Submit the form
       fireEvent.click(submitButton);
@@ -283,15 +294,26 @@ describe('FitnessPage', () => {
       const exerciseInput = screen.getByLabelText(/exercise/i);
       const setsInput = screen.getByLabelText(/sets/i);
       const repsInput = screen.getByLabelText(/reps/i);
-      const weightInput = screen.getByLabelText(/weight/i);
       const notesInput = screen.getByLabelText(/notes/i);
       const submitButton = screen.getByRole('button', { name: /log workout/i });
 
       fireEvent.change(exerciseInput, { target: { value: 'Bench Press' } });
       fireEvent.change(setsInput, { target: { value: '3' } });
       fireEvent.change(repsInput, { target: { value: '10' } });
-      fireEvent.change(weightInput, { target: { value: '135' } });
       fireEvent.change(notesInput, { target: { value: 'Good form' } });
+      
+      // Wait for per-set weight inputs to appear
+      await waitFor(() => {
+        expect(screen.getByLabelText(/set 1/i)).toBeInTheDocument();
+      });
+      
+      // Fill in per-set weights
+      const set1Input = screen.getByLabelText(/set 1/i);
+      const set2Input = screen.getByLabelText(/set 2/i);
+      const set3Input = screen.getByLabelText(/set 3/i);
+      fireEvent.change(set1Input, { target: { value: '135' } });
+      fireEvent.change(set2Input, { target: { value: '135' } });
+      fireEvent.change(set3Input, { target: { value: '135' } });
       fireEvent.click(submitButton);
 
       // Verify createWorkout was called with correct data
@@ -331,13 +353,22 @@ describe('FitnessPage', () => {
       const exerciseInput = screen.getByLabelText(/exercise/i);
       const setsInput = screen.getByLabelText(/sets/i);
       const repsInput = screen.getByLabelText(/reps/i);
-      const weightInput = screen.getByLabelText(/weight/i);
       const submitButton = screen.getByRole('button', { name: /log workout/i });
 
       fireEvent.change(exerciseInput, { target: { value: 'Squats' } });
       fireEvent.change(setsInput, { target: { value: '5' } });
       fireEvent.change(repsInput, { target: { value: '5' } });
-      fireEvent.change(weightInput, { target: { value: '225' } });
+      
+      // Wait for per-set weight inputs to appear
+      await waitFor(() => {
+        expect(screen.getByLabelText(/set 1/i)).toBeInTheDocument();
+      });
+      
+      // Fill in per-set weights
+      for (let i = 1; i <= 5; i++) {
+        const setInput = screen.getByLabelText(new RegExp(`set ${i}`, 'i'));
+        fireEvent.change(setInput, { target: { value: '225' } });
+      }
       fireEvent.click(submitButton);
 
       // Verify workout appears in the list
@@ -380,7 +411,15 @@ describe('FitnessPage', () => {
       fireEvent.change(exerciseInput, { target: { value: 'Deadlift' } });
       fireEvent.change(setsInput, { target: { value: '1' } });
       fireEvent.change(repsInput, { target: { value: '5' } });
-      fireEvent.change(weightInput, { target: { value: '315' } });
+      
+      // Wait for per-set weight inputs to appear
+      await waitFor(() => {
+        expect(screen.getByLabelText(/set 1/i)).toBeInTheDocument();
+      });
+      
+      // Fill in per-set weight
+      const set1Input = screen.getByLabelText(/set 1/i);
+      fireEvent.change(set1Input, { target: { value: '315' } });
       fireEvent.click(submitButton);
 
       // Verify stats updated to 1
@@ -418,13 +457,22 @@ describe('FitnessPage', () => {
       const exerciseInput = screen.getByLabelText(/exercise/i);
       const setsInput = screen.getByLabelText(/sets/i);
       const repsInput = screen.getByLabelText(/reps/i);
-      const weightInput = screen.getByLabelText(/weight/i);
       const submitButton = screen.getByRole('button', { name: /log workout/i });
 
       fireEvent.change(exerciseInput, { target: { value: 'Pull-ups' } });
       fireEvent.change(setsInput, { target: { value: '3' } });
       fireEvent.change(repsInput, { target: { value: '8' } });
-      fireEvent.change(weightInput, { target: { value: '0' } });
+      
+      // Wait for per-set weight inputs to appear
+      await waitFor(() => {
+        expect(screen.getByLabelText(/set 1/i)).toBeInTheDocument();
+      });
+      
+      // Fill in per-set weights
+      for (let i = 1; i <= 3; i++) {
+        const setInput = screen.getByLabelText(new RegExp(`set ${i}`, 'i'));
+        fireEvent.change(setInput, { target: { value: '0' } });
+      }
       fireEvent.click(submitButton);
 
       // Verify success message appears
@@ -453,7 +501,17 @@ describe('FitnessPage', () => {
       fireEvent.change(exerciseInput, { target: { value: 'Overhead Press' } });
       fireEvent.change(setsInput, { target: { value: '3' } });
       fireEvent.change(repsInput, { target: { value: '8' } });
-      fireEvent.change(weightInput, { target: { value: '95' } });
+      
+      // Wait for per-set weight inputs to appear
+      await waitFor(() => {
+        expect(screen.getByLabelText(/set 1/i)).toBeInTheDocument();
+      });
+      
+      // Fill in per-set weights
+      for (let i = 1; i <= 3; i++) {
+        const setInput = screen.getByLabelText(new RegExp(`set ${i}`, 'i'));
+        fireEvent.change(setInput, { target: { value: '95' } });
+      }
       fireEvent.click(submitButton);
 
       // Verify error message appears
@@ -485,7 +543,17 @@ describe('FitnessPage', () => {
       fireEvent.change(exerciseInput, { target: { value: 'Rows' } });
       fireEvent.change(setsInput, { target: { value: '3' } });
       fireEvent.change(repsInput, { target: { value: '10' } });
-      fireEvent.change(weightInput, { target: { value: '135' } });
+      
+      // Wait for per-set weight inputs to appear
+      await waitFor(() => {
+        expect(screen.getByLabelText(/set 1/i)).toBeInTheDocument();
+      });
+      
+      // Fill in per-set weights
+      for (let i = 1; i <= 3; i++) {
+        const setInput = screen.getByLabelText(new RegExp(`set ${i}`, 'i'));
+        fireEvent.change(setInput, { target: { value: '135' } });
+      }
       fireEvent.click(submitButton);
 
       // Verify error is displayed
@@ -533,13 +601,22 @@ describe('FitnessPage', () => {
       const exerciseInput = screen.getByLabelText(/exercise/i);
       const setsInput = screen.getByLabelText(/sets/i);
       const repsInput = screen.getByLabelText(/reps/i);
-      const weightInput = screen.getByLabelText(/weight/i);
       const submitButton = screen.getByRole('button', { name: /log workout/i });
 
       fireEvent.change(exerciseInput, { target: { value: 'New Workout' } });
       fireEvent.change(setsInput, { target: { value: '3' } });
       fireEvent.change(repsInput, { target: { value: '10' } });
-      fireEvent.change(weightInput, { target: { value: '150' } });
+      
+      // Wait for per-set weight inputs to appear
+      await waitFor(() => {
+        expect(screen.getByLabelText(/set 1/i)).toBeInTheDocument();
+      });
+      
+      // Fill in per-set weights
+      for (let i = 1; i <= 3; i++) {
+        const setInput = screen.getByLabelText(new RegExp(`set ${i}`, 'i'));
+        fireEvent.change(setInput, { target: { value: '150' } });
+      }
       fireEvent.click(submitButton);
 
       // Verify both workouts are displayed

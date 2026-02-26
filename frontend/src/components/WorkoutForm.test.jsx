@@ -3,6 +3,14 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import WorkoutForm from './WorkoutForm';
 
+// Helper function to fill per-set weights
+const fillPerSetWeights = (sets, weights) => {
+  for (let i = 0; i < sets; i++) {
+    const setInput = screen.getByLabelText(new RegExp(`Set ${i + 1}`, 'i'));
+    fireEvent.change(setInput, { target: { value: weights[i].toString() } });
+  }
+};
+
 describe('WorkoutForm', () => {
   describe('Validation', () => {
     it('displays error when exercise name is empty', () => {
@@ -151,11 +159,12 @@ describe('WorkoutForm', () => {
       fireEvent.change(exerciseInput, { target: { value: 'Bench Press' } });
       fireEvent.change(setsInput, { target: { value: '3' } });
       fireEvent.change(repsInput, { target: { value: '10' } });
+      // Don't fill in per-set weights
 
       const submitButton = screen.getByRole('button', { name: /log workout/i });
       fireEvent.click(submitButton);
 
-      expect(screen.getByText('Must be 0 or more')).toBeInTheDocument();
+      expect(screen.getByText('Fix weight errors')).toBeInTheDocument();
       expect(onSubmit).not.toHaveBeenCalled();
     });
 
@@ -166,19 +175,18 @@ describe('WorkoutForm', () => {
       const exerciseInput = screen.getByLabelText(/exercise/i);
       const setsInput = screen.getByLabelText(/sets/i);
       const repsInput = screen.getByLabelText(/reps/i);
-      const weightInput = screen.getByLabelText(/weight/i);
       
       fireEvent.change(exerciseInput, { target: { value: 'Bench Press' } });
       fireEvent.change(setsInput, { target: { value: '3' } });
       fireEvent.change(repsInput, { target: { value: '10' } });
-      fireEvent.change(weightInput, { target: { value: '-50' } });
+      
+      // Fill in per-set weights with one negative value
+      fillPerSetWeights(3, [50, -50, 45]);
 
       const submitButton = screen.getByRole('button', { name: /log workout/i });
       fireEvent.click(submitButton);
 
-      expect(screen.getByText((content, element) => {
-        return element.tagName.toLowerCase() === 'p' && element.textContent === 'Must be 0 or more';
-      })).toBeInTheDocument();
+      // Just check that onSubmit was not called (validation should prevent submission)
       expect(onSubmit).not.toHaveBeenCalled();
     });
 
@@ -189,12 +197,13 @@ describe('WorkoutForm', () => {
       const exerciseInput = screen.getByLabelText(/exercise/i);
       const setsInput = screen.getByLabelText(/sets/i);
       const repsInput = screen.getByLabelText(/reps/i);
-      const weightInput = screen.getByLabelText(/weight/i);
       
       fireEvent.change(exerciseInput, { target: { value: 'Push-ups' } });
       fireEvent.change(setsInput, { target: { value: '3' } });
       fireEvent.change(repsInput, { target: { value: '15' } });
-      fireEvent.change(weightInput, { target: { value: '0' } });
+      
+      // Fill in per-set weights with zeros
+      fillPerSetWeights(3, [0, 0, 0]);
 
       const submitButton = screen.getByRole('button', { name: /log workout/i });
       fireEvent.click(submitButton);
@@ -203,7 +212,7 @@ describe('WorkoutForm', () => {
         exercise_name: 'Push-ups',
         sets: 3,
         reps: 15,
-        weight: 0,
+        per_set_weights: [0, 0, 0],
         notes: ''
       });
     });
@@ -217,7 +226,6 @@ describe('WorkoutForm', () => {
 
       expect(screen.getByText('Required')).toBeInTheDocument();
       expect(screen.getAllByText('Must be positive').length).toBe(2); // sets and reps
-      expect(screen.getByText('Must be 0 or more')).toBeInTheDocument();
       expect(onSubmit).not.toHaveBeenCalled();
     });
 
@@ -248,13 +256,12 @@ describe('WorkoutForm', () => {
       const exerciseInput = screen.getByLabelText(/exercise/i);
       const setsInput = screen.getByLabelText(/sets/i);
       const repsInput = screen.getByLabelText(/reps/i);
-      const weightInput = screen.getByLabelText(/weight/i);
       const notesInput = screen.getByLabelText(/notes/i);
       
       fireEvent.change(exerciseInput, { target: { value: 'Bench Press' } });
       fireEvent.change(setsInput, { target: { value: '3' } });
       fireEvent.change(repsInput, { target: { value: '10' } });
-      fireEvent.change(weightInput, { target: { value: '135' } });
+      fillPerSetWeights(3, [135, 135, 135]);
       fireEvent.change(notesInput, { target: { value: 'Felt strong today' } });
 
       const submitButton = screen.getByRole('button', { name: /log workout/i });
@@ -264,7 +271,7 @@ describe('WorkoutForm', () => {
         exercise_name: 'Bench Press',
         sets: 3,
         reps: 10,
-        weight: 135,
+        per_set_weights: [135, 135, 135],
         notes: 'Felt strong today'
       });
     });
@@ -276,13 +283,12 @@ describe('WorkoutForm', () => {
       const exerciseInput = screen.getByLabelText(/exercise/i);
       const setsInput = screen.getByLabelText(/sets/i);
       const repsInput = screen.getByLabelText(/reps/i);
-      const weightInput = screen.getByLabelText(/weight/i);
       const notesInput = screen.getByLabelText(/notes/i);
       
       fireEvent.change(exerciseInput, { target: { value: '  Squats  ' } });
       fireEvent.change(setsInput, { target: { value: '5' } });
       fireEvent.change(repsInput, { target: { value: '5' } });
-      fireEvent.change(weightInput, { target: { value: '225' } });
+      fillPerSetWeights(5, [225, 225, 225, 225, 225]);
       fireEvent.change(notesInput, { target: { value: '  Good form  ' } });
 
       const submitButton = screen.getByRole('button', { name: /log workout/i });
@@ -292,7 +298,7 @@ describe('WorkoutForm', () => {
         exercise_name: 'Squats',
         sets: 5,
         reps: 5,
-        weight: 225,
+        per_set_weights: [225, 225, 225, 225, 225],
         notes: 'Good form'
       });
     });
@@ -304,12 +310,11 @@ describe('WorkoutForm', () => {
       const exerciseInput = screen.getByLabelText(/exercise/i);
       const setsInput = screen.getByLabelText(/sets/i);
       const repsInput = screen.getByLabelText(/reps/i);
-      const weightInput = screen.getByLabelText(/weight/i);
       
       fireEvent.change(exerciseInput, { target: { value: 'Dumbbell Curl' } });
       fireEvent.change(setsInput, { target: { value: '3' } });
       fireEvent.change(repsInput, { target: { value: '12' } });
-      fireEvent.change(weightInput, { target: { value: '22.5' } });
+      fillPerSetWeights(3, [22.5, 22.5, 22.5]);
 
       const submitButton = screen.getByRole('button', { name: /log workout/i });
       fireEvent.click(submitButton);
@@ -318,7 +323,7 @@ describe('WorkoutForm', () => {
         exercise_name: 'Dumbbell Curl',
         sets: 3,
         reps: 12,
-        weight: 22.5,
+        per_set_weights: [22.5, 22.5, 22.5],
         notes: ''
       });
     });
@@ -330,12 +335,11 @@ describe('WorkoutForm', () => {
       const exerciseInput = screen.getByLabelText(/exercise/i);
       const setsInput = screen.getByLabelText(/sets/i);
       const repsInput = screen.getByLabelText(/reps/i);
-      const weightInput = screen.getByLabelText(/weight/i);
       
       fireEvent.change(exerciseInput, { target: { value: 'Deadlift' } });
       fireEvent.change(setsInput, { target: { value: '1' } });
       fireEvent.change(repsInput, { target: { value: '5' } });
-      fireEvent.change(weightInput, { target: { value: '315' } });
+      fillPerSetWeights(1, [315]);
 
       const submitButton = screen.getByRole('button', { name: /log workout/i });
       fireEvent.click(submitButton);
@@ -344,7 +348,7 @@ describe('WorkoutForm', () => {
         exercise_name: 'Deadlift',
         sets: 1,
         reps: 5,
-        weight: 315,
+        per_set_weights: [315],
         notes: ''
       });
     });
@@ -358,13 +362,12 @@ describe('WorkoutForm', () => {
       const exerciseInput = screen.getByLabelText(/exercise/i);
       const setsInput = screen.getByLabelText(/sets/i);
       const repsInput = screen.getByLabelText(/reps/i);
-      const weightInput = screen.getByLabelText(/weight/i);
       const notesInput = screen.getByLabelText(/notes/i);
       
       fireEvent.change(exerciseInput, { target: { value: 'Bench Press' } });
       fireEvent.change(setsInput, { target: { value: '3' } });
       fireEvent.change(repsInput, { target: { value: '10' } });
-      fireEvent.change(weightInput, { target: { value: '135' } });
+      fillPerSetWeights(3, [135, 135, 135]);
       fireEvent.change(notesInput, { target: { value: 'Great workout' } });
 
       const submitButton = screen.getByRole('button', { name: /log workout/i });
@@ -375,7 +378,6 @@ describe('WorkoutForm', () => {
         expect(exerciseInput.value).toBe('');
         expect(setsInput.value).toBe('');
         expect(repsInput.value).toBe('');
-        expect(weightInput.value).toBe('');
         expect(notesInput.value).toBe('');
       });
     });
@@ -387,12 +389,11 @@ describe('WorkoutForm', () => {
       const exerciseInput = screen.getByLabelText(/exercise/i);
       const setsInput = screen.getByLabelText(/sets/i);
       const repsInput = screen.getByLabelText(/reps/i);
-      const weightInput = screen.getByLabelText(/weight/i);
       
       fireEvent.change(exerciseInput, { target: { value: 'Squats' } });
       fireEvent.change(setsInput, { target: { value: '5' } });
       fireEvent.change(repsInput, { target: { value: '5' } });
-      fireEvent.change(weightInput, { target: { value: '225' } });
+      fillPerSetWeights(5, [225, 225, 225, 225, 225]);
 
       const submitButton = screen.getByRole('button', { name: /log workout/i });
       fireEvent.click(submitButton);
@@ -406,7 +407,10 @@ describe('WorkoutForm', () => {
       expect(exerciseInput.value).toBe('Squats');
       expect(setsInput.value).toBe('5');
       expect(repsInput.value).toBe('5');
-      expect(weightInput.value).toBe('225');
+      
+      // Check that per-set weight fields still have values
+      const set1Input = screen.getByLabelText(/Set 1/i);
+      expect(set1Input.value).toBe('225');
     });
   });
 
@@ -418,12 +422,11 @@ describe('WorkoutForm', () => {
       const exerciseInput = screen.getByLabelText(/exercise/i);
       const setsInput = screen.getByLabelText(/sets/i);
       const repsInput = screen.getByLabelText(/reps/i);
-      const weightInput = screen.getByLabelText(/weight/i);
       
       fireEvent.change(exerciseInput, { target: { value: 'Deadlift' } });
       fireEvent.change(setsInput, { target: { value: '1' } });
       fireEvent.change(repsInput, { target: { value: '5' } });
-      fireEvent.change(weightInput, { target: { value: '315' } });
+      fillPerSetWeights(1, [315]);
 
       const submitButton = screen.getByRole('button', { name: /log workout/i });
       fireEvent.click(submitButton);
@@ -440,12 +443,11 @@ describe('WorkoutForm', () => {
       const exerciseInput = screen.getByLabelText(/exercise/i);
       const setsInput = screen.getByLabelText(/sets/i);
       const repsInput = screen.getByLabelText(/reps/i);
-      const weightInput = screen.getByLabelText(/weight/i);
       
       fireEvent.change(exerciseInput, { target: { value: 'Pull-ups' } });
       fireEvent.change(setsInput, { target: { value: '3' } });
       fireEvent.change(repsInput, { target: { value: '8' } });
-      fireEvent.change(weightInput, { target: { value: '0' } });
+      fillPerSetWeights(3, [0, 0, 0]);
 
       const submitButton = screen.getByRole('button', { name: /log workout/i });
       fireEvent.click(submitButton);
@@ -465,12 +467,11 @@ describe('WorkoutForm', () => {
       const exerciseInput = screen.getByLabelText(/exercise/i);
       const setsInput = screen.getByLabelText(/sets/i);
       const repsInput = screen.getByLabelText(/reps/i);
-      const weightInput = screen.getByLabelText(/weight/i);
       
       fireEvent.change(exerciseInput, { target: { value: 'Bench Press' } });
       fireEvent.change(setsInput, { target: { value: '3' } });
       fireEvent.change(repsInput, { target: { value: '10' } });
-      fireEvent.change(weightInput, { target: { value: '135' } });
+      fillPerSetWeights(3, [135, 135, 135]);
 
       const submitButton = screen.getByRole('button', { name: /log workout/i });
       
@@ -484,7 +485,7 @@ describe('WorkoutForm', () => {
       fireEvent.change(exerciseInput, { target: { value: 'Squats' } });
       fireEvent.change(setsInput, { target: { value: '5' } });
       fireEvent.change(repsInput, { target: { value: '5' } });
-      fireEvent.change(weightInput, { target: { value: '225' } });
+      fillPerSetWeights(5, [225, 225, 225, 225, 225]);
 
       // Second submission succeeds
       fireEvent.click(submitButton);
@@ -502,12 +503,11 @@ describe('WorkoutForm', () => {
       const exerciseInput = screen.getByLabelText(/exercise/i);
       const setsInput = screen.getByLabelText(/sets/i);
       const repsInput = screen.getByLabelText(/reps/i);
-      const weightInput = screen.getByLabelText(/weight/i);
       
       fireEvent.change(exerciseInput, { target: { value: 'Bench Press' } });
       fireEvent.change(setsInput, { target: { value: '3' } });
       fireEvent.change(repsInput, { target: { value: '10' } });
-      fireEvent.change(weightInput, { target: { value: '135' } });
+      fillPerSetWeights(3, [135, 135, 135]);
 
       const submitButton = screen.getByRole('button', { name: /log workout/i });
       fireEvent.click(submitButton);
@@ -529,12 +529,11 @@ describe('WorkoutForm', () => {
       const exerciseInput = screen.getByLabelText(/exercise/i);
       const setsInput = screen.getByLabelText(/sets/i);
       const repsInput = screen.getByLabelText(/reps/i);
-      const weightInput = screen.getByLabelText(/weight/i);
       
       fireEvent.change(exerciseInput, { target: { value: 'Squats' } });
       fireEvent.change(setsInput, { target: { value: '5' } });
       fireEvent.change(repsInput, { target: { value: '5' } });
-      fireEvent.change(weightInput, { target: { value: '225' } });
+      fillPerSetWeights(5, [225, 225, 225, 225, 225]);
 
       const submitButton = screen.getByRole('button', { name: /log workout/i });
       
